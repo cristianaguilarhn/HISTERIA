@@ -1,0 +1,11 @@
+# .NET
+bin/
+obj/
+# Node
+node_modules/
+dist/
+# Env
+.env
+# VSCode
+.vscode/*
+!.vscode/extensions.json
