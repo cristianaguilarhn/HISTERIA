@@ -3,6 +3,8 @@ var builder = WebApplication.CreateBuilder(args);
 // Add services to the container.
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 builder.Services.AddOpenApi();
+builder.Services.Configure<EmailOptions>(builder.Configuration.GetSection("Email"));
+builder.Services.AddSingleton<IEmailSender, SmtpEmailSender>();
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowFrontend", policy =>
@@ -15,7 +17,6 @@ builder.Services.AddCors(options =>
 });
 
 var app = builder.Build();
-var contactRecipient = "xtian.osx@gmail.com";
 var visitCount = 0;
 var visitLock = new object();
 var contactRequests = new List<ContactSubmission>();
@@ -59,7 +60,7 @@ app.MapGet("/contact", () =>
 })
 .WithName("GetContactRequests");
 
-app.MapPost("/contact", async (ContactRequest request) =>
+app.MapPost("/contact", async (ContactRequest request, IEmailSender emailSender) =>
 {
     if (string.IsNullOrWhiteSpace(request.NombreSolicitante) ||
         string.IsNullOrWhiteSpace(request.Telefono) ||
@@ -94,7 +95,19 @@ app.MapPost("/contact", async (ContactRequest request) =>
         contactRequests.Add(submission);
     }
 
-    await SendContactMessageAsync(submission, contactRecipient, app.Logger);
+    try
+    {
+        await emailSender.SendContactRequestAsync(submission);
+    }
+    catch (Exception error)
+    {
+        app.Logger.LogError(error, "No se pudo enviar el correo de la solicitud #{Id}.", submission.Id);
+
+        return Results.Json(
+            new ContactResponse(false, "No se pudo enviar la solicitud por correo. Inténtalo de nuevo."),
+            statusCode: StatusCodes.Status500InternalServerError
+        );
+    }
 
     return Results.Ok(new ContactResponse(
         true,
@@ -124,34 +137,9 @@ app.MapGet("/weatherforecast", () =>
 
 app.Run();
 
-static Task SendContactMessageAsync(ContactSubmission request, string recipient, ILogger logger)
-{
-    // Email sending is intentionally prepared here without external dependencies.
-    // Replace this log with SMTP, SendGrid, Mailgun, or another provider when credentials are available.
-    logger.LogInformation(
-        "Nueva solicitud #{Id} para {Recipient}: Solicitante={NombreSolicitante}, Telefono={Telefono}, Correo={Correo}, Evento={NombreEvento}, Tipo={TipoEvento}, Personas={CantidadPersonas}, Ubicacion={Ubicacion}, Fecha={FechaEvento}, Hora={HoraEstimada}, Duracion={DuracionEsperada}, Presupuesto={PresupuestoAproximado}, Detalles={DetallesImportantes}",
-        request.Id,
-        recipient,
-        request.NombreSolicitante,
-        request.Telefono,
-        request.Correo,
-        request.NombreEvento,
-        request.TipoEvento,
-        request.CantidadPersonas,
-        request.Ubicacion,
-        request.FechaEvento,
-        request.HoraEstimada,
-        request.DuracionEsperada,
-        request.PresupuestoAproximado,
-        request.DetallesImportantes
-    );
+public record VisitCounterResponse(int Count);
 
-    return Task.CompletedTask;
-}
-
-record VisitCounterResponse(int Count);
-
-record ContactRequest(
+public record ContactRequest(
     string NombreSolicitante,
     string Telefono,
     string? Correo,
@@ -166,7 +154,7 @@ record ContactRequest(
     string? DetallesImportantes
 );
 
-record ContactSubmission(
+public record ContactSubmission(
     int Id,
     DateTimeOffset ReceivedAt,
     string NombreSolicitante,
@@ -183,9 +171,9 @@ record ContactSubmission(
     string? DetallesImportantes
 );
 
-record ContactResponse(bool Success, string Message);
+public record ContactResponse(bool Success, string Message);
 
-record WeatherForecast(DateOnly Date, int TemperatureC, string? Summary)
+public record WeatherForecast(DateOnly Date, int TemperatureC, string? Summary)
 {
     public int TemperatureF => 32 + (int)(TemperatureC / 0.5556);
 }

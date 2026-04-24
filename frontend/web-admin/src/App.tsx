@@ -1,9 +1,16 @@
-import { type FormEvent, type SVGProps, useEffect, useState } from "react";
+import {
+  type ComponentType,
+  type FormEvent,
+  type SVGProps,
+  useEffect,
+  useState,
+} from "react";
 import {
   registerVisit,
   sendContactMessage,
   type ContactFormPayload,
 } from "./services/api";
+import { MemberCard } from "./components/MemberCard";
 
 type IconProps = SVGProps<SVGSVGElement>;
 type VisitCounterStatus = "loading" | "ready" | "error";
@@ -52,11 +59,61 @@ const IconTikTok = (props: IconProps) => (
   </svg>
 );
 
+const IconMail = (props: IconProps) => (
+  <svg viewBox="0 0 24 24" aria-hidden="true" {...props}>
+    <path d="M4 5h16a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2Zm0 2v.3l8 5.3 8-5.3V7H4Zm16 10V9.7l-7.4 4.9a1 1 0 0 1-1.2 0L4 9.7V17h16Z" />
+  </svg>
+);
+
+const IconYouTube = (props: IconProps) => (
+  <svg viewBox="0 0 24 24" aria-hidden="true" {...props}>
+    <path d="M21.2 7.2c-.2-1-.9-1.8-1.9-2-1.7-.4-7.3-.4-7.3-.4s-5.6 0-7.3.4c-1 .2-1.7 1-1.9 2C2.4 8.9 2.4 12 2.4 12s0 3.1.4 4.8c.2 1 .9 1.8 1.9 2 1.7.4 7.3.4 7.3.4s5.6 0 7.3-.4c1-.2 1.7-1 1.9-2 .4-1.7.4-4.8.4-4.8s0-3.1-.4-4.8ZM10 15.6V8.4l6 3.6-6 3.6Z" />
+  </svg>
+);
+
+const IconMic = (props: IconProps) => (
+  <svg viewBox="0 0 24 24" aria-hidden="true" {...props}>
+    <path d="M12 2a4 4 0 0 0-4 4v5a4 4 0 1 0 8 0V6a4 4 0 0 0-4-4Zm7 8.5h-2A5 5 0 0 1 7 10.5H5a7 7 0 0 0 6 6.9V20H8v2h8v-2h-3v-2.6a7 7 0 0 0 6-6.9Z" />
+  </svg>
+);
+
+const IconGuitar = (props: IconProps) => (
+  <svg viewBox="0 0 24 24" aria-hidden="true" {...props}>
+    <path d="m18.7 2 3.3 3.3-2.1 2.1 1 1-1.4 1.4-1-1-3.1 3.1a5.2 5.2 0 0 1-1.2 5.5c-2.5 2.5-6.8 2.4-9.6-.4s-2.9-7.1-.4-9.6a5.2 5.2 0 0 1 5.5-1.2l3.1-3.1-1-1L13.2.7l1 1L16.3 0l1.4 1.4-2.1 2.1 1.2 1.2L18.7 2ZM7.4 15.5a2.2 2.2 0 1 0 3.1-3.1 2.2 2.2 0 0 0-3.1 3.1Z" />
+  </svg>
+);
+
+const IconDrums = (props: IconProps) => (
+  <svg viewBox="0 0 24 24" aria-hidden="true" {...props}>
+    <path d="M4 9.5C4 7.6 7.1 6 11 6s7 1.6 7 3.5v5C18 16.4 14.9 18 11 18s-7-1.6-7-3.5v-5Zm14.8-6.8 1.4 1.4-3.9 3.9-1.4-1.4 3.9-3.9ZM3.8 2.7l3.9 3.9-1.4 1.4-3.9-3.9 1.4-1.4ZM11 8c-3.1 0-5 1-5 1.5S7.9 11 11 11s5-1 5-1.5S14.1 8 11 8Z" />
+  </svg>
+);
+
 const members = [
-  { name: "Christopher Valladares", role: "Vocalista" },
-  { name: "Cristian Aguilar", role: "Guitarrista" },
-  { name: "Wilmer Dávila", role: "Bajista" },
-  { name: "Rolando Ardón", role: "Baterista" },
+  {
+    name: "Christopher Valladares",
+    role: "Vocalista",
+    bio: "Voz principal y presencia escénica para conectar con el público.",
+    icon: IconMic,
+  },
+  {
+    name: "Cristian Aguilar",
+    role: "Guitarrista",
+    bio: "Guitarra, energía y soporte armónico de la banda.",
+    icon: IconGuitar,
+  },
+  {
+    name: "Wilmer Dávila",
+    role: "Bajista",
+    bio: "Base rítmica y groove que sostiene cada show.",
+    icon: IconGuitar,
+  },
+  {
+    name: "Rolando Ardón",
+    role: "Baterista",
+    bio: "Pulso, fuerza y dinámica en vivo.",
+    icon: IconDrums,
+  },
 ];
 
 const repertoire = [
@@ -71,18 +128,33 @@ const repertoire = [
 const socialLinks = [
   {
     name: "Facebook",
-    url: "https://www.facebook.com/search/top?q=Tensi%C3%B3n%20Retro",
+    url: "https://www.facebook.com/share/18aeDfk8uH/",
     icon: IconFacebook,
   },
   {
     name: "Instagram",
-    url: "https://www.instagram.com/explore/search/keyword/?q=Tensi%C3%B3n%20Retro",
+    url: "https://www.instagram.com/tensionretro?igsh=MTljN2w3MTR0OGkzcQ==",
     icon: IconInstagram,
   },
   {
     name: "TikTok",
-    url: "https://www.tiktok.com/search?q=Tensi%C3%B3n%20Retro",
+    url: "https://www.tiktok.com/@tensionretro?_r=1&_t=ZS-95lk0S4L4Sb",
     icon: IconTikTok,
+  },
+];
+
+const footerSocialLinks: Array<{
+  name: string;
+  url: string | null;
+  icon: ComponentType<IconProps>;
+  note?: string;
+}> = [
+  ...socialLinks,
+  {
+    name: "YouTube",
+    url: null,
+    icon: IconYouTube,
+    note: "Próximamente",
   },
 ];
 
@@ -358,11 +430,14 @@ function App() {
         <p className="section-kicker">Integrantes</p>
         <h2>La alineación</h2>
         <div className="member-grid">
-          {members.map((member) => (
-            <article className="member-card" key={member.name}>
-              <span>{member.role}</span>
-              <h3>{member.name}</h3>
-            </article>
+          {members.map(({ bio, icon: Icon, name, role }) => (
+            <MemberCard
+              bio={bio}
+              Icon={Icon}
+              key={name}
+              name={name}
+              role={role}
+            />
           ))}
         </div>
       </section>
@@ -551,6 +626,70 @@ function App() {
           {formStatus && <p className="form-status form-wide">{formStatus}</p>}
         </form>
       </section>
+
+      <footer className="site-footer reveal" aria-label="Pie de página">
+        <div className="footer-grid">
+          <section className="footer-brand">
+            <a className="footer-brand-lockup" href="#inicio" aria-label="Inicio Tensión Retro">
+              <img src={LOGO_SRC} alt="Tensión Retro" className="footer-logo" />
+              <div>
+                <strong>Tensión Retro</strong>
+                <p>
+                  Banda de covers en Tegucigalpa para eventos, bares y noches en vivo.
+                </p>
+              </div>
+            </a>
+          </section>
+
+          <section className="footer-column" aria-labelledby="footer-contacto">
+            <p className="footer-kicker" id="footer-contacto">Contacto</p>
+            <div className="footer-links">
+              <a href="tel:+50433017565">
+                <IconPhone className="footer-icon" />
+                <span>33017565</span>
+              </a>
+              <span className="footer-static-item">
+                <IconMap className="footer-icon" />
+                <span>Tegucigalpa, Honduras</span>
+              </span>
+              <a href="mailto:xtian.osx@gmail.com">
+                <IconMail className="footer-icon" />
+                <span>xtian.osx@gmail.com</span>
+              </a>
+            </div>
+          </section>
+
+          <section className="footer-column" aria-labelledby="footer-redes">
+            <p className="footer-kicker" id="footer-redes">Redes</p>
+            <div className="footer-links">
+              {footerSocialLinks.map(({ icon: Icon, name, note, url }) =>
+                url ? (
+                  <a key={name} href={url} target="_blank" rel="noreferrer">
+                    <Icon className="footer-icon" />
+                    <span>{name}</span>
+                  </a>
+                ) : (
+                  <span
+                    key={name}
+                    className="footer-static-item footer-static-item-muted"
+                    aria-label={`${name} ${note}`}
+                  >
+                    <Icon className="footer-icon" />
+                    <span>
+                      {name}
+                      <small>{note}</small>
+                    </span>
+                  </span>
+                )
+              )}
+            </div>
+          </section>
+        </div>
+
+        <div className="footer-bottom">
+          <p>© 2026 Tensión Retro — Todos los derechos reservados</p>
+        </div>
+      </footer>
 
       <a
         className="whatsapp-float"
