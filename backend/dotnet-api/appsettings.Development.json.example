@@ -1,0 +1,30 @@
+# Configuración de desarrollo local
+# Copia este archivo a appsettings.Development.json y completa los valores
+
+{
+  "Logging": {
+    "LogLevel": {
+      "Default": "Debug",
+      "Microsoft.AspNetCore": "Information"
+    }
+  },
+  "Email": {
+    "RecipientEmail": "tu@email.com",
+    "FromEmail": "tu@email.com",
+    "FromName": "Tensión Retro",
+    "Smtp": {
+      "Host": "smtp.gmail.com",
+      "Port": 587,
+      "EnableSsl": true,
+      "Username": "tu@email.com",
+      "Password": "xxxx xxxx xxxx xxxx"
+    }
+  },
+  "Admin": {
+    "ApiKey": "cambia-este-api-key",
+    "DefaultUser": "Cristian",
+    "Password": "cambia-esta-contrasena",
+    "TokenSecret": "cambia-este-secreto-largo"
+  },
+  "AllowedHosts": "*"
+}

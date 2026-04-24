@@ -6,6 +6,7 @@ node_modules/
 dist/
 # Env
 .env
+appsettings.Development.json
 # VSCode
 .vscode/*
 !.vscode/extensions.json

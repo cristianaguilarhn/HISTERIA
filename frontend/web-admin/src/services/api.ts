@@ -1,5 +1,6 @@
 export type VisitCounter = {
   count: number;
+  sessionId?: string;
 };
 
 export type ContactFormPayload = {
@@ -22,11 +23,75 @@ export type ContactResponse = {
   message: string;
 };
 
+export type AdminLoginResponse = {
+  token: string;
+  username: string;
+  memberName: string;
+  expiresAt: string;
+};
+
+export type MetricPoint = {
+  date: string;
+  count: number;
+};
+
+export type AdminMetrics = {
+  totalVisits: number;
+  trackedVisits: number;
+  activeSessions: number;
+  totalContactRequests: number;
+  conversionRate: number;
+  visitsByDay: MetricPoint[];
+  contactRequestsByDay: MetricPoint[];
+  activeSessionsByCountry: MetricPoint[];
+  recentActiveSessions: ActiveSession[];
+};
+
+export type ContactRequestRecord = ContactFormPayload & {
+  id: number;
+  receivedAt: string;
+};
+
+export type ActiveSession = {
+  sessionId: string;
+  country?: string;
+  ipAddress?: string;
+  path?: string;
+  firstSeenAt: string;
+  lastSeenAt: string;
+};
+
+export type AdminUser = {
+  id: number;
+  username: string;
+  displayName: string;
+  createdAt: string;
+};
+
+export type CreateAdminUserPayload = {
+  username: string;
+  displayName: string;
+  password: string;
+};
+
+export type ChangeAdminPasswordPayload = {
+  username: string;
+  currentPassword: string;
+  newPassword: string;
+};
+
 const API_URL = (import.meta.env.VITE_API_URL ?? "").replace(/\/$/, "");
 
-export async function registerVisit(): Promise<VisitCounter> {
+export async function registerVisit(sessionId: string): Promise<VisitCounter> {
   const response = await fetch(`${API_URL}/visits`, {
     method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      path: `${window.location.pathname}${window.location.hash}`,
+      sessionId,
+    }),
   });
 
   if (!response.ok) {
@@ -54,4 +119,165 @@ export async function sendContactMessage(
   }
 
   return data;
+}
+
+export async function loginAdmin(
+  memberName: string,
+  password: string
+): Promise<AdminLoginResponse> {
+  const response = await fetch(`${API_URL}/auth/login`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ memberName, password }),
+  });
+
+  if (!response.ok) {
+    throw new Error("No se pudo iniciar sesion. Revisa la contrasena.");
+  }
+
+  return response.json();
+}
+
+export async function sendVisitHeartbeat(sessionId: string): Promise<void> {
+  const response = await fetch(`${API_URL}/visits/heartbeat`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      path: `${window.location.pathname}${window.location.hash}`,
+      sessionId,
+    }),
+  });
+
+  if (!response.ok) {
+    throw new Error("No se pudo actualizar la sesion activa");
+  }
+}
+
+export async function getAdminMetrics(token: string): Promise<AdminMetrics> {
+  const response = await fetch(`${API_URL}/admin/metrics`, {
+    headers: getAdminHeaders(token),
+  });
+
+  if (!response.ok) {
+    throw new Error("No se pudieron cargar las metricas.");
+  }
+
+  return response.json();
+}
+
+export async function getAdminContacts(
+  token: string
+): Promise<ContactRequestRecord[]> {
+  const response = await fetch(`${API_URL}/admin/contacts`, {
+    headers: getAdminHeaders(token),
+  });
+
+  if (!response.ok) {
+    throw new Error("No se pudieron cargar las solicitudes.");
+  }
+
+  return response.json();
+}
+
+export async function downloadContactsCsv(token: string): Promise<Blob> {
+  const response = await fetch(`${API_URL}/admin/contacts/export`, {
+    headers: getAdminHeaders(token),
+  });
+
+  if (!response.ok) {
+    throw new Error("No se pudo exportar el CSV.");
+  }
+
+  return response.blob();
+}
+
+export async function deleteAdminContact(
+  token: string,
+  contactId: number
+): Promise<void> {
+  const response = await fetch(`${API_URL}/admin/contacts/${contactId}`, {
+    method: "DELETE",
+    headers: getAdminHeaders(token),
+  });
+
+  if (!response.ok) {
+    throw new Error("No se pudo borrar la solicitud.");
+  }
+}
+
+export async function getAdminUsers(token: string): Promise<AdminUser[]> {
+  const response = await fetch(`${API_URL}/admin/users`, {
+    headers: getAdminHeaders(token),
+  });
+
+  if (!response.ok) {
+    throw new Error("No se pudieron cargar las cuentas admin.");
+  }
+
+  return response.json();
+}
+
+export async function createAdminUser(
+  token: string,
+  payload: CreateAdminUserPayload
+): Promise<AdminUser> {
+  const response = await fetch(`${API_URL}/admin/users`, {
+    method: "POST",
+    headers: {
+      ...getAdminHeaders(token),
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(payload),
+  });
+
+  if (!response.ok) {
+    const data = await response.json().catch(() => null);
+    throw new Error(data?.message || "No se pudo crear la cuenta admin.");
+  }
+
+  return response.json();
+}
+
+export async function deleteAdminUser(
+  token: string,
+  userId: number
+): Promise<void> {
+  const response = await fetch(`${API_URL}/admin/users/${userId}`, {
+    method: "DELETE",
+    headers: getAdminHeaders(token),
+  });
+
+  if (!response.ok) {
+    const data = await response.json().catch(() => null);
+    throw new Error(data?.message || "No se pudo borrar la cuenta admin.");
+  }
+}
+
+export async function changeAdminPassword(
+  token: string,
+  payload: ChangeAdminPasswordPayload
+): Promise<void> {
+  const response = await fetch(`${API_URL}/admin/users/change-password`, {
+    method: "POST",
+    headers: {
+      ...getAdminHeaders(token),
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(payload),
+  });
+
+  if (!response.ok) {
+    const data = await response.json().catch(() => null);
+    throw new Error(data?.message || "No se pudo cambiar la contrasena.");
+  }
+}
+
+function getAdminHeaders(token: string): HeadersInit {
+  return {
+    Authorization: `Bearer ${token}`,
+  };
 }

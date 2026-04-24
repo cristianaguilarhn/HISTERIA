@@ -1,4 +1,4 @@
-import {
+﻿import {
   type ComponentType,
   type FormEvent,
   type SVGProps,
@@ -7,15 +7,19 @@ import {
 } from "react";
 import {
   registerVisit,
+  sendVisitHeartbeat,
   sendContactMessage,
   type ContactFormPayload,
 } from "./services/api";
+import { AdminPanel } from "./components/AdminPanel";
 import { MemberCard } from "./components/MemberCard";
 
 type IconProps = SVGProps<SVGSVGElement>;
 type VisitCounterStatus = "loading" | "ready" | "error";
+type FormStatus = { tone: "success" | "error"; message: string } | null;
 
 const LOGO_SRC = "/logo.png";
+const VISITOR_SESSION_KEY = "tensionretro-visitor-session";
 
 const IconPhone = (props: IconProps) => (
   <svg viewBox="0 0 24 24" aria-hidden="true" {...props}>
@@ -166,16 +170,16 @@ const heroHighlights = [
 
 const liveVideos = [
   {
-    title: "Videos en vivo",
-    src: "https://www.youtube-nocookie.com/embed/M7lc1UVf-VE?rel=0",
+    title: "Tensión Retro en vivo",
+    src: "https://www.youtube.com/embed/oCnzqQiguyk",
   },
   {
-    title: "Clasicos e indie con sonido de banda",
-    src: "https://www.youtube-nocookie.com/embed/M7lc1UVf-VE?rel=0",
+    title: "Clásicos e indie con sonido de banda",
+    src: "https://www.youtube.com/embed/uxtazIp78NU",
   },
   {
     title: "Ambiente en vivo para bares y eventos",
-    src: "https://www.youtube-nocookie.com/embed/M7lc1UVf-VE?rel=0",
+    src: "https://www.youtube.com/embed/P2JKl7EyxeM",
   },
 ];
 
@@ -200,12 +204,39 @@ const initialForm: ContactFormPayload = {
   detallesImportantes: "",
 };
 
+function getVisitorSessionId() {
+  const existingSessionId = window.localStorage.getItem(VISITOR_SESSION_KEY);
+  if (existingSessionId) {
+    return existingSessionId;
+  }
+
+  const nextSessionId = window.crypto.randomUUID();
+  window.localStorage.setItem(VISITOR_SESSION_KEY, nextSessionId);
+  return nextSessionId;
+}
+
 function App() {
+  const [hashRoute, setHashRoute] = useState(window.location.hash);
+
+  useEffect(() => {
+    const handleHashChange = () => setHashRoute(window.location.hash);
+    window.addEventListener("hashchange", handleHashChange);
+    return () => window.removeEventListener("hashchange", handleHashChange);
+  }, []);
+
+  if (hashRoute === "#admin") {
+    return <AdminPanel />;
+  }
+
+  return <PublicLanding />;
+}
+
+function PublicLanding() {
   const [visitCount, setVisitCount] = useState<number | null>(null);
   const [visitStatus, setVisitStatus] = useState<VisitCounterStatus>("loading");
   const [form, setForm] = useState<ContactFormPayload>(initialForm);
   const [isSending, setIsSending] = useState(false);
-  const [formStatus, setFormStatus] = useState<string | null>(null);
+  const [formStatus, setFormStatus] = useState<FormStatus>(null);
 
   useEffect(() => {
     document.title =
@@ -226,7 +257,9 @@ function App() {
 
     revealElements.forEach((element) => observer.observe(element));
 
-    registerVisit()
+    const visitorSessionId = getVisitorSessionId();
+
+    registerVisit(visitorSessionId)
       .then(({ count }) => {
         setVisitCount(count);
         setVisitStatus("ready");
@@ -237,7 +270,17 @@ function App() {
         setVisitStatus("error");
       });
 
-    return () => observer.disconnect();
+    const heartbeat = () => {
+      sendVisitHeartbeat(visitorSessionId).catch((error) => {
+        console.error(error);
+      });
+    };
+    const heartbeatInterval = window.setInterval(heartbeat, 30000);
+
+    return () => {
+      observer.disconnect();
+      window.clearInterval(heartbeatInterval);
+    };
   }, []);
 
   const updateField = (field: keyof ContactFormPayload, value: string) => {
@@ -254,14 +297,19 @@ function App() {
 
     try {
       const response = await sendContactMessage(form);
-      setFormStatus(response.message);
+      setFormStatus({
+        tone: response.success ? "success" : "error",
+        message: response.message,
+      });
       setForm(initialForm);
     } catch (error) {
-      setFormStatus(
-        error instanceof Error
-          ? error.message
-          : "No se pudo enviar la solicitud. Inténtalo de nuevo."
-      );
+      setFormStatus({
+        tone: "error",
+        message:
+          error instanceof Error
+            ? error.message
+            : "No se pudo enviar la solicitud. Intentalo de nuevo.",
+      });
     } finally {
       setIsSending(false);
     }
@@ -397,7 +445,7 @@ function App() {
           <h2 id="live-title">Así suena Tensión Retro en vivo</h2>
           <p>
             Mira el tipo de energia que podemos llevar a tu bar, evento privado
-            o celebracion. Estos videos son placeholders de YouTube por ahora.
+            o celebracion. Estos videos muestran momentos reales de la banda.
           </p>
         </div>
         <div className="video-grid">
@@ -624,10 +672,21 @@ function App() {
           </label>
 
           <button className="button button-primary form-wide" type="submit" disabled={isSending}>
-            {isSending ? "Enviando..." : "Enviar solicitud de contratación"}
+            {isSending ? (
+              <>
+                <span className="button-spinner" aria-hidden="true" />
+                Enviando...
+              </>
+            ) : (
+              "Enviar solicitud de contratación"
+            )}
           </button>
 
-          {formStatus && <p className="form-status form-wide">{formStatus}</p>}
+          {formStatus && (
+            <p className={`form-status form-status-${formStatus.tone} form-wide`}>
+              {formStatus.message}
+            </p>
+          )}
         </form>
       </section>
 
@@ -692,6 +751,8 @@ function App() {
 
         <div className="footer-bottom">
           <p>© 2026 Tensión Retro — Todos los derechos reservados</p>
+          <a className="footer-quiet-link" href="#inicio">Volver al inicio</a>
+          <a className="footer-quiet-link" href="#admin">Acceso privado</a>
         </div>
       </footer>
 
@@ -709,4 +770,6 @@ function App() {
   );
 }
 
+
 export default App;
+
