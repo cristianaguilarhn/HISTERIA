@@ -93,25 +93,25 @@ const members = [
   {
     name: "Christopher Valladares",
     role: "Vocalista",
-    bio: "Voz principal y presencia escénica para conectar con el público.",
+    bio: "Voz principal y presencia escénica.",
     icon: IconMic,
   },
   {
     name: "Cristian Aguilar",
     role: "Guitarrista",
-    bio: "Guitarra, energía y soporte armónico de la banda.",
+    bio: "Guitarra, energía y soporte armónico.",
     icon: IconGuitar,
   },
   {
     name: "Wilmer Dávila",
     role: "Bajista",
-    bio: "Base rítmica y groove que sostiene cada show.",
+    bio: "Base rítmica y groove en vivo.",
     icon: IconGuitar,
   },
   {
     name: "Rolando Ardón",
     role: "Baterista",
-    bio: "Pulso, fuerza y dinámica en vivo.",
+    bio: "Pulso, fuerza y dinámica.",
     icon: IconDrums,
   },
 ];
@@ -331,7 +331,11 @@ function App() {
             <span className="live-pill">
               <IconMusic className="pill-icon" /> Banda en vivo
             </span>
-            <strong>33017565</strong>
+            <span className="hero-contact-label">Contrataciones</span>
+            <a className="hero-phone-link" href="tel:+50433017565" aria-label="Llamar al +504 3301-7565">
+              <IconPhone className="hero-phone-icon" />
+              <span>+504 3301-7565</span>
+            </a>
             <p>Contrataciones para Tegucigalpa y alrededores.</p>
             <div
               className={`visit-counter${isVisitCountLoading ? " visit-counter-loading" : ""}`}

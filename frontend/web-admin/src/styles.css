@@ -502,6 +502,57 @@ h2 {
   letter-spacing: -0.05em;
 }
 
+.hero-contact-label {
+  display: inline-flex;
+  align-items: center;
+  margin: 16px 0 10px;
+  color: #f5c053;
+  font-size: 0.8rem;
+  font-weight: 900;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.hero-phone-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  margin: 0 0 8px;
+  color: #fff8ec;
+  font-size: clamp(1.32rem, 2.7vw, 2.08rem);
+  font-weight: 900;
+  letter-spacing: -0.05em;
+  line-height: 1;
+  white-space: nowrap;
+  text-decoration: none;
+  transition:
+    transform 220ms cubic-bezier(0.2, 0.8, 0.2, 1),
+    color 220ms ease,
+    text-shadow 220ms ease;
+}
+
+.hero-phone-link:hover,
+.hero-phone-link:focus-visible {
+  color: #ffd37c;
+  transform: translateY(-2px) scale(1.04);
+  text-shadow: 0 0 18px rgba(245, 192, 83, 0.14);
+}
+
+.hero-phone-icon {
+  flex: 0 0 auto;
+  width: 21px;
+  height: 21px;
+  color: #f5c053;
+  transition: transform 220ms cubic-bezier(0.2, 0.8, 0.2, 1), color 220ms ease;
+}
+
+.hero-phone-link:hover .hero-phone-icon,
+.hero-phone-link:focus-visible .hero-phone-icon {
+  color: #ffd37c;
+  transform: rotate(-10deg) scale(1.08);
+}
+
 .hero-card p {
   max-width: 280px;
   margin-bottom: 0;
@@ -792,8 +843,8 @@ h2 {
 .member-card {
   display: grid;
   align-content: start;
-  gap: 20px;
-  min-height: 248px;
+  gap: 16px;
+  min-height: 220px;
   border: 1px solid rgba(255, 255, 255, 0.12);
   border-radius: 24px;
   padding: 22px;
@@ -870,7 +921,15 @@ h2 {
 
 .member-copy {
   display: grid;
-  gap: 4px;
+  gap: 8px;
+}
+
+.member-teaser {
+  margin: 0;
+  color: rgba(216, 202, 188, 0.92);
+  font-size: 0.96rem;
+  line-height: 1.55;
+  max-width: 18ch;
 }
 
 .member-card-details-wrap {
@@ -879,6 +938,9 @@ h2 {
 
 .member-card-details {
   padding-top: 2px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  padding-inline-start: 0;
+  padding-top: 12px;
 }
 
 .member-icon-shell {
@@ -1426,6 +1488,8 @@ h2 {
   .social-row a:focus-visible,
   .header-links a:hover,
   .header-links a:focus-visible,
+  .hero-phone-link:hover,
+  .hero-phone-link:focus-visible,
   .tag-list span:hover,
   .live-pill:hover,
   .booking-note a:hover,

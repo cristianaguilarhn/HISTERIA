@@ -209,6 +209,7 @@ export function MemberCard({ bio, Icon, name, role }: MemberCardProps) {
         <div className="member-copy">
           <span>{role}</span>
           <h3>{name}</h3>
+          <p className="member-teaser">{bio}</p>
         </div>
 
         <span className="member-icon-shell" ref={iconRef} aria-hidden="true">
