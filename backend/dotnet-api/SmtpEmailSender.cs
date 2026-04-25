@@ -19,21 +19,29 @@ public sealed class SmtpEmailSender : IEmailSender
     {
         ValidateOptions();
 
-        var fromEmail = string.IsNullOrWhiteSpace(options.FromEmail)
-            ? options.Smtp.Username
-            : options.FromEmail;
+        var fromEmail = string.IsNullOrWhiteSpace(options.Smtp.FromEmail)
+            ? (string.IsNullOrWhiteSpace(options.FromEmail)
+                ? options.Smtp.Username
+                : options.FromEmail)
+            : options.Smtp.FromEmail;
+        var fromName = string.IsNullOrWhiteSpace(options.Smtp.FromName)
+            ? options.FromName
+            : options.Smtp.FromName;
+        var recipientEmail = string.IsNullOrWhiteSpace(options.Smtp.RecipientEmail)
+            ? options.RecipientEmail
+            : options.Smtp.RecipientEmail;
 
         using var message = new MailMessage
         {
-            From = new MailAddress(fromEmail, options.FromName, Encoding.UTF8),
-            Subject = $"Nueva solicitud de contratación - {request.NombreEvento}",
+            From = new MailAddress(fromEmail, fromName, Encoding.UTF8),
+            Subject = $"Nueva solicitud de contratacion - {request.NombreEvento}",
             Body = BuildHtmlBody(request),
             IsBodyHtml = true,
             BodyEncoding = Encoding.UTF8,
             SubjectEncoding = Encoding.UTF8
         };
 
-        message.To.Add(new MailAddress(options.RecipientEmail));
+        message.To.Add(new MailAddress(recipientEmail));
 
         if (MailAddress.TryCreate(request.Correo, out var replyTo))
         {
@@ -49,27 +57,55 @@ public sealed class SmtpEmailSender : IEmailSender
         await client.SendMailAsync(message);
 
         logger.LogInformation(
-            "Correo de solicitud #{Id} enviado a {RecipientEmail}.",
+            "Correo de solicitud #{Id} enviado a {RecipientEmail} usando {Host}:{Port}.",
             request.Id,
-            options.RecipientEmail
+            recipientEmail,
+            options.Smtp.Host,
+            options.Smtp.Port
         );
     }
 
     private void ValidateOptions()
     {
-        if (string.IsNullOrWhiteSpace(options.RecipientEmail))
+        var recipientEmail = string.IsNullOrWhiteSpace(options.Smtp.RecipientEmail)
+            ? options.RecipientEmail
+            : options.Smtp.RecipientEmail;
+
+        if (string.IsNullOrWhiteSpace(recipientEmail))
         {
-            throw new InvalidOperationException("Email:RecipientEmail no está configurado.");
+            throw new InvalidOperationException("Email:RecipientEmail o Email:Smtp:RecipientEmail no esta configurado.");
         }
 
-        if (string.IsNullOrWhiteSpace(options.Smtp.Host) ||
-            string.IsNullOrWhiteSpace(options.Smtp.Username) ||
-            string.IsNullOrWhiteSpace(options.Smtp.Password))
+        if (string.IsNullOrWhiteSpace(options.Smtp.Host))
+        {
+            throw new InvalidOperationException("Email:Smtp:Host no esta configurado.");
+        }
+
+        if (string.IsNullOrWhiteSpace(options.Smtp.Username))
+        {
+            throw new InvalidOperationException("Email:Smtp:Username no esta configurado.");
+        }
+
+        if (string.IsNullOrWhiteSpace(options.Smtp.Password))
         {
             throw new InvalidOperationException(
-                "Configura Email:Smtp:Host, Email:Smtp:Username y Email:Smtp:Password para enviar correos."
+                "Email:Smtp:Password no esta configurado. Gmail requiere un App Password, no la contrasena normal."
             );
         }
+
+        if (IsPlaceholder(options.Smtp.Password))
+        {
+            throw new InvalidOperationException(
+                "Email:Smtp:Password sigue con un valor de ejemplo. Reemplazalo por un Gmail App Password real."
+            );
+        }
+    }
+
+    private static bool IsPlaceholder(string value)
+    {
+        var normalized = value.Trim();
+        return normalized.Equals("TU_APP_PASSWORD_AQUI", StringComparison.OrdinalIgnoreCase) ||
+            normalized.Equals("xxxx xxxx xxxx xxxx", StringComparison.OrdinalIgnoreCase);
     }
 
     private static string BuildHtmlBody(ContactSubmission request)
@@ -77,15 +113,15 @@ public sealed class SmtpEmailSender : IEmailSender
         var rows = new[]
         {
             Field("Nombre", request.NombreSolicitante),
-            Field("Teléfono", request.Telefono),
+            Field("Telefono", request.Telefono),
             Field("Correo", request.Correo),
             Field("Nombre del local o evento", request.NombreEvento),
             Field("Tipo de evento", request.TipoEvento),
-            Field("Tamaño o personas aproximadas", request.CantidadPersonas),
-            Field("Ubicación", request.Ubicacion),
+            Field("Tamano o personas aproximadas", request.CantidadPersonas),
+            Field("Ubicacion", request.Ubicacion),
             Field("Fecha", request.FechaEvento),
             Field("Hora", request.HoraEstimada),
-            Field("Duración", request.DuracionEsperada),
+            Field("Duracion", request.DuracionEsperada),
             Field("Presupuesto", request.PresupuestoAproximado),
             Field("Detalles importantes", request.DetallesImportantes)
         };
@@ -97,10 +133,10 @@ public sealed class SmtpEmailSender : IEmailSender
           <div style="max-width:680px;margin:0 auto;padding:32px;">
             <div style="border:1px solid rgba(245,192,83,.28);border-radius:24px;padding:28px;background:#1f1915;">
               <p style="margin:0 0 8px;color:#f5c053;font-size:12px;font-weight:800;letter-spacing:.16em;text-transform:uppercase;">
-                Tensión Retro
+                Tension Retro
               </p>
               <h1 style="margin:0 0 18px;color:#fff8ec;font-size:28px;line-height:1.1;">
-                Nueva solicitud de contratación
+                Nueva solicitud de contratacion
               </h1>
               <p style="margin:0 0 24px;color:#d8cabc;line-height:1.6;">
                 Recibida el {{Html(request.ReceivedAt.ToString("yyyy-MM-dd HH:mm 'UTC'"))}}.

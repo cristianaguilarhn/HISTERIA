@@ -10,10 +10,13 @@
 } from "react";
 import {
   changeAdminPassword,
+  createAdminEvent,
   createAdminUser,
+  deleteAdminEvent,
   deleteAdminContact,
   deleteAdminUser,
   downloadContactsCsv,
+  getAdminEvents,
   getAdminContacts,
   getAdminMetrics,
   getAdminUsers,
@@ -22,11 +25,23 @@ import {
   type AdminMetrics,
   type AdminUser,
   type ContactRequestRecord,
+  type CreatePresentationEventPayload,
+  type PresentationEvent,
 } from "../services/api";
 
 type IconProps = SVGProps<SVGSVGElement>;
-type AdminModule = "metrics" | "requests" | "users" | "settings" | "payments";
+type AdminModule =
+  | "metrics"
+  | "requests"
+  | "events"
+  | "users"
+  | "settings";
 type FormStatus = { tone: "success" | "error"; message: string } | null;
+type EventsModuleStatus =
+  | { tone: "idle"; message: string }
+  | { tone: "loading"; message: string }
+  | { tone: "error"; message: string }
+  | { tone: "success"; message: string };
 
 const ADMIN_SESSION_KEY = "tensionretro-admin-session";
 const LOGO_SRC = "/logo.png";
@@ -46,6 +61,12 @@ const IconChart = (props: IconProps) => (
 const IconDownload = (props: IconProps) => (
   <svg viewBox="0 0 24 24" aria-hidden="true" {...props}>
     <path d="M11 3h2v9.2l3.6-3.6L18 10l-6 6-6-6 1.4-1.4 3.6 3.6V3ZM5 19h14v2H5v-2Z" />
+  </svg>
+);
+
+const IconCalendar = (props: IconProps) => (
+  <svg viewBox="0 0 24 24" aria-hidden="true" {...props}>
+    <path d="M7 2h2v2h6V2h2v2h3v17H4V4h3V2Zm13 8H4v9h16v-9Z" />
   </svg>
 );
 
@@ -82,9 +103,9 @@ const IconMap = (props: IconProps) => (
 const adminModules: Array<{ id: AdminModule; label: string }> = [
   { id: "metrics", label: "Métricas" },
   { id: "requests", label: "Solicitudes" },
+  { id: "events", label: "Eventos" },
   { id: "users", label: "Usuarios" },
   { id: "settings", label: "Configuración" },
-  { id: "payments", label: "Pagos" },
 ];
 
 function loadAdminSession(): AdminLoginResponse | null {
@@ -233,7 +254,12 @@ function AdminWorkspace({
   const [activeModule, setActiveModule] = useState<AdminModule>("metrics");
   const [metrics, setMetrics] = useState<AdminMetrics | null>(null);
   const [contacts, setContacts] = useState<ContactRequestRecord[]>([]);
+  const [events, setEvents] = useState<PresentationEvent[]>([]);
   const [adminUsers, setAdminUsers] = useState<AdminUser[]>([]);
+  const [eventsStatus, setEventsStatus] = useState<EventsModuleStatus>({
+    tone: "idle",
+    message: "",
+  });
   const [query, setQuery] = useState("");
   const [dateFilter, setDateFilter] = useState("");
   const [status, setStatus] = useState("Cargando panel...");
@@ -243,6 +269,16 @@ function AdminWorkspace({
     username: "",
     displayName: "",
     password: "",
+  });
+  const [newEvent, setNewEvent] = useState<CreatePresentationEventPayload>({
+    title: "",
+    venue: "",
+    city: "",
+    eventDate: "",
+    eventTime: "",
+    description: "",
+    facebookUrl: "",
+    status: "upcoming",
   });
   const [passwordChange, setPasswordChange] = useState({
     currentPassword: "",
@@ -284,6 +320,39 @@ function AdminWorkspace({
     };
   }, [session.token]);
 
+  useEffect(() => {
+    let isMounted = true;
+    setEventsStatus({ tone: "loading", message: "Cargando eventos..." });
+
+    getAdminEvents(session.token)
+      .then((nextEvents) => {
+        if (!isMounted) {
+          return;
+        }
+
+        setEvents(nextEvents);
+        setEventsStatus({ tone: "success", message: "" });
+      })
+      .catch((error) => {
+        if (!isMounted) {
+          return;
+        }
+
+        setEvents([]);
+        setEventsStatus({
+          tone: "error",
+          message:
+            error instanceof Error
+              ? error.message
+              : "No se pudieron cargar los eventos.",
+        });
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [session.token]);
+
   const refreshDashboardData = async () => {
     const [nextMetrics, nextContacts, nextAdminUsers] = await Promise.all([
       getAdminMetrics(session.token),
@@ -294,6 +363,26 @@ function AdminWorkspace({
     setMetrics(nextMetrics);
     setContacts(nextContacts);
     setAdminUsers(nextAdminUsers);
+  };
+
+  const refreshEvents = async () => {
+    setEventsStatus({ tone: "loading", message: "Cargando eventos..." });
+
+    try {
+      const nextEvents = await getAdminEvents(session.token);
+      setEvents(nextEvents);
+      setEventsStatus({ tone: "success", message: "" });
+    } catch (error) {
+      setEvents([]);
+      setEventsStatus({
+        tone: "error",
+        message:
+          error instanceof Error
+            ? error.message
+            : "No se pudieron cargar los eventos.",
+      });
+      throw error;
+    }
   };
 
   const filteredContacts = useMemo(() => {
@@ -382,6 +471,63 @@ function AdminWorkspace({
           error instanceof Error
             ? error.message
             : "No se pudo crear la cuenta admin.",
+      });
+    }
+  };
+
+  const handleCreateEvent = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setActionStatus(null);
+
+    try {
+      await createAdminEvent(session.token, newEvent);
+      setNewEvent({
+        title: "",
+        venue: "",
+        city: "",
+        eventDate: "",
+        eventTime: "",
+        description: "",
+        facebookUrl: "",
+        status: "upcoming",
+      });
+      await refreshEvents();
+      setActionStatus({
+        tone: "success",
+        message: "Evento creado correctamente.",
+      });
+    } catch (error) {
+      setActionStatus({
+        tone: "error",
+        message:
+          error instanceof Error ? error.message : "No se pudo crear el evento.",
+      });
+    }
+  };
+
+  const handleDeleteEvent = async (eventItem: PresentationEvent) => {
+    const confirmation = window.prompt(
+      `Para borrar el evento "${eventItem.title}", escribe BORRAR.`
+    );
+
+    if (confirmation !== "BORRAR") {
+      return;
+    }
+
+    setActionStatus(null);
+
+    try {
+      await deleteAdminEvent(session.token, eventItem.id);
+      await refreshEvents();
+      setActionStatus({
+        tone: "success",
+        message: "Evento borrado correctamente.",
+      });
+    } catch (error) {
+      setActionStatus({
+        tone: "error",
+        message:
+          error instanceof Error ? error.message : "No se pudo borrar el evento.",
       });
     }
   };
@@ -532,6 +678,17 @@ function AdminWorkspace({
           />
         )}
 
+        {activeModule === "events" && (
+          <EventsModule
+            events={events}
+            eventsStatus={eventsStatus}
+            newEvent={newEvent}
+            onCreateEvent={handleCreateEvent}
+            onDeleteEvent={handleDeleteEvent}
+            onNewEventChange={setNewEvent}
+          />
+        )}
+
         {activeModule === "settings" && (
           <SettingsModule
             onChangePassword={handleChangePassword}
@@ -540,8 +697,6 @@ function AdminWorkspace({
             setPasswordChange={setPasswordChange}
           />
         )}
-
-        {activeModule === "payments" && <PaymentsModule />}
       </section>
     </div>
   );
@@ -798,6 +953,179 @@ function UsersModule({
   );
 }
 
+function EventsModule({
+  events,
+  eventsStatus,
+  newEvent,
+  onCreateEvent,
+  onDeleteEvent,
+  onNewEventChange,
+}: {
+  events: PresentationEvent[];
+  eventsStatus: EventsModuleStatus;
+  newEvent: CreatePresentationEventPayload;
+  onCreateEvent: (event: FormEvent<HTMLFormElement>) => void;
+  onDeleteEvent: (event: PresentationEvent) => void;
+  onNewEventChange: Dispatch<SetStateAction<CreatePresentationEventPayload>>;
+}) {
+  return (
+    <article className="requests-panel">
+      <div className="requests-toolbar">
+        <div>
+          <h3>Próximas presentaciones</h3>
+          <p>{events.length} eventos registrados</p>
+        </div>
+      </div>
+
+      {eventsStatus.tone === "error" && (
+        <p className="form-status form-status-error">{eventsStatus.message}</p>
+      )}
+
+      <form className="admin-event-form" onSubmit={onCreateEvent}>
+        <input
+          required
+          value={newEvent.title}
+          onChange={(event) =>
+            onNewEventChange((current) => ({
+              ...current,
+              title: event.target.value,
+            }))
+          }
+          placeholder="Título del evento"
+        />
+        <input
+          required
+          value={newEvent.venue}
+          onChange={(event) =>
+            onNewEventChange((current) => ({
+              ...current,
+              venue: event.target.value,
+            }))
+          }
+          placeholder="Venue o local"
+        />
+        <input
+          required
+          value={newEvent.city}
+          onChange={(event) =>
+            onNewEventChange((current) => ({
+              ...current,
+              city: event.target.value,
+            }))
+          }
+          placeholder="Ciudad"
+        />
+        <input
+          required
+          type="date"
+          value={newEvent.eventDate}
+          onChange={(event) =>
+            onNewEventChange((current) => ({
+              ...current,
+              eventDate: event.target.value,
+            }))
+          }
+        />
+        <input
+          required
+          type="time"
+          value={newEvent.eventTime}
+          onChange={(event) =>
+            onNewEventChange((current) => ({
+              ...current,
+              eventTime: event.target.value,
+            }))
+          }
+        />
+        <select
+          value={newEvent.status}
+          onChange={(event) =>
+            onNewEventChange((current) => ({
+              ...current,
+              status: event.target.value as CreatePresentationEventPayload["status"],
+            }))
+          }
+        >
+          <option value="upcoming">Próximo</option>
+          <option value="completed">Completado</option>
+        </select>
+        <input
+          value={newEvent.facebookUrl}
+          onChange={(event) =>
+            onNewEventChange((current) => ({
+              ...current,
+              facebookUrl: event.target.value,
+            }))
+          }
+          placeholder="URL de Facebook (opcional)"
+        />
+        <textarea
+          required
+          value={newEvent.description}
+          onChange={(event) =>
+            onNewEventChange((current) => ({
+              ...current,
+              description: event.target.value,
+            }))
+          }
+          placeholder="Descripción breve del show"
+          rows={4}
+        />
+        <div className="admin-event-actions">
+          <button className="button button-primary" type="submit">
+            <IconCalendar className="button-icon" /> Crear evento
+          </button>
+          <p>Espacio listo para edición futura sin cambiar el modelo.</p>
+        </div>
+      </form>
+
+      <div className="admin-event-list">
+        {eventsStatus.tone === "loading" && (
+          <p className="empty-state">Cargando eventos...</p>
+        )}
+        {events.map((event) => (
+          <div key={event.id} className="admin-event-row">
+            <div>
+              <strong>{event.title}</strong>
+              <span>
+                {formatEventDate(event.eventDate)} a las {formatEventTime(event.eventTime)}
+              </span>
+              <span>
+                {event.venue}, {event.city}
+              </span>
+              <small>{event.status === "upcoming" ? "Próximo" : "Completado"}</small>
+            </div>
+            <p>{event.description}</p>
+            <div className="admin-event-row-actions">
+              {event.facebookUrl && (
+                <a
+                  className="button button-secondary"
+                  href={event.facebookUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  Ver evento
+                </a>
+              )}
+              <button
+                className="icon-action icon-action-danger"
+                type="button"
+                onClick={() => onDeleteEvent(event)}
+                aria-label={`Borrar evento ${event.title}`}
+              >
+                <IconTrash className="button-icon" />
+              </button>
+            </div>
+          </div>
+        ))}
+        {eventsStatus.tone !== "loading" && events.length === 0 && (
+          <p className="empty-state">Todavía no hay eventos cargados.</p>
+        )}
+      </div>
+    </article>
+  );
+}
+
 function SettingsModule({
   onChangePassword,
   passwordChange,
@@ -878,19 +1206,6 @@ function SettingsModule({
   );
 }
 
-function PaymentsModule() {
-  return (
-    <article className="requests-panel placeholder-panel">
-      <p className="section-kicker">Futuro módulo</p>
-      <h3>Pagos</h3>
-      <p>
-        Espacio reservado para registrar anticipos, pagos pendientes, metodos de
-        pago y conciliacion por evento.
-      </p>
-    </article>
-  );
-}
-
 function MetricCard({ label, value }: { label: string; value: number | string }) {
   return (
     <article className="metric-card">
@@ -931,5 +1246,18 @@ function formatDateTime(value: string) {
     dateStyle: "medium",
     timeStyle: "short",
   }).format(new Date(value));
+}
+
+function formatEventDate(value: string) {
+  return new Intl.DateTimeFormat("es-HN", {
+    dateStyle: "full",
+  }).format(new Date(`${value}T00:00:00`));
+}
+
+function formatEventTime(value: string) {
+  return new Intl.DateTimeFormat("es-HN", {
+    hour: "numeric",
+    minute: "2-digit",
+  }).format(new Date(`1970-01-01T${value}`));
 }
 

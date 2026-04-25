@@ -81,6 +81,20 @@ using (var scope = app.Services.CreateScope())
         );
         """);
     db.Database.ExecuteSqlRaw("""
+        CREATE TABLE IF NOT EXISTS "PresentationEvents" (
+            "Id" INTEGER NOT NULL CONSTRAINT "PK_PresentationEvents" PRIMARY KEY AUTOINCREMENT,
+            "Title" TEXT NOT NULL,
+            "Venue" TEXT NOT NULL,
+            "City" TEXT NOT NULL,
+            "EventDate" TEXT NOT NULL,
+            "EventTime" TEXT NOT NULL,
+            "Description" TEXT NOT NULL,
+            "FacebookUrl" TEXT NULL,
+            "Status" TEXT NOT NULL,
+            "CreatedAt" TEXT NOT NULL
+        );
+        """);
+    db.Database.ExecuteSqlRaw("""
         CREATE UNIQUE INDEX IF NOT EXISTS "IX_AdminUsers_Username"
         ON "AdminUsers" ("Username");
         """);
@@ -470,6 +484,94 @@ app.MapGet("/admin/contacts/export", async (HttpContext context, ContactDbContex
 })
 .WithName("ExportAdminContactRequests");
 
+app.MapGet("/events", async (ContactDbContext db) =>
+{
+    var today = DateTime.UtcNow.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
+    var events = (await db.PresentationEvents
+        .AsNoTracking()
+        .Where(item => item.Status == "upcoming")
+        .OrderBy(item => item.EventDate)
+        .ThenBy(item => item.EventTime)
+        .ToListAsync())
+        .Where(item => string.CompareOrdinal(item.EventDate, today) >= 0)
+        .ToList();
+
+    return Results.Ok(events.Select(PresentationEventResponse.From).ToList());
+})
+.WithName("GetUpcomingEvents");
+
+app.MapGet("/admin/events", async (HttpContext context, ContactDbContext db) =>
+{
+    if (!AdminHelpers.IsAdminRequest(context, adminApiKey, adminTokenSecret))
+    {
+        return Results.Unauthorized();
+    }
+
+    var events = (await db.PresentationEvents
+        .AsNoTracking()
+        .OrderBy(item => item.EventDate)
+        .ThenBy(item => item.EventTime)
+        .ToListAsync())
+        .OrderBy(item => item.EventDate)
+        .ThenBy(item => item.EventTime)
+        .ThenByDescending(item => item.CreatedAt)
+        .ToList();
+
+    return Results.Ok(events.Select(PresentationEventResponse.From).ToList());
+})
+.WithName("GetAdminEvents");
+
+app.MapPost("/admin/events", async (HttpContext context, ContactDbContext db, PresentationEventRequest request) =>
+{
+    if (!AdminHelpers.IsAdminRequest(context, adminApiKey, adminTokenSecret))
+    {
+        return Results.Unauthorized();
+    }
+
+    if (!AdminHelpers.TryNormalizePresentationEvent(request, out var normalized, out var validationMessage))
+    {
+        return Results.BadRequest(new { message = validationMessage });
+    }
+
+    var entity = new PresentationEventEntity
+    {
+        Title = normalized.Title,
+        Venue = normalized.Venue,
+        City = normalized.City,
+        EventDate = normalized.EventDate,
+        EventTime = normalized.EventTime,
+        Description = normalized.Description,
+        FacebookUrl = normalized.FacebookUrl,
+        Status = normalized.Status,
+        CreatedAt = DateTimeOffset.UtcNow
+    };
+
+    db.PresentationEvents.Add(entity);
+    await db.SaveChangesAsync();
+
+    return Results.Created($"/admin/events/{entity.Id}", PresentationEventResponse.From(entity));
+})
+.WithName("CreateAdminEvent");
+
+app.MapDelete("/admin/events/{id:int}", async (HttpContext context, ContactDbContext db, int id) =>
+{
+    if (!AdminHelpers.IsAdminRequest(context, adminApiKey, adminTokenSecret))
+    {
+        return Results.Unauthorized();
+    }
+
+    var entity = await db.PresentationEvents.FirstOrDefaultAsync(item => item.Id == id);
+    if (entity == null)
+    {
+        return Results.NotFound(new { message = "Evento no encontrado." });
+    }
+
+    db.PresentationEvents.Remove(entity);
+    await db.SaveChangesAsync();
+    return Results.NoContent();
+})
+.WithName("DeleteAdminEvent");
+
 app.MapPost("/contact", async (ContactRequest request, IEmailSender emailSender, ContactDbContext db) =>
 {
     if (string.IsNullOrWhiteSpace(request.NombreSolicitante) ||
@@ -479,7 +581,11 @@ app.MapPost("/contact", async (ContactRequest request, IEmailSender emailSender,
         string.IsNullOrWhiteSpace(request.Ubicacion) ||
         string.IsNullOrWhiteSpace(request.FechaEvento))
     {
-        return Results.BadRequest(new ContactResponse(false, "Completa los campos requeridos de la solicitud."));
+        return Results.BadRequest(new ContactResponse(
+            false,
+            false,
+            "Completa los campos requeridos de la solicitud."
+        ));
     }
 
     var submission = new ContactRequestEntity
@@ -508,17 +614,28 @@ app.MapPost("/contact", async (ContactRequest request, IEmailSender emailSender,
     }
     catch (Exception error)
     {
-        app.Logger.LogError(error, "No se pudo enviar el correo de la solicitud #{Id}.", submission.Id);
-
-        return Results.Json(
-            new ContactResponse(false, "No se pudo enviar la solicitud por correo. Inténtalo de nuevo."),
-            statusCode: StatusCodes.Status500InternalServerError
+        app.Logger.LogError(
+            error,
+            "Fallo SMTP al enviar la solicitud #{Id}. Tipo={ErrorType}. Mensaje={ErrorMessage}. Host={Host}. Port={Port}. Recipient={RecipientEmail}.",
+            submission.Id,
+            error.GetType().Name,
+            error.Message,
+            builder.Configuration["Email:Smtp:Host"] ?? "",
+            builder.Configuration["Email:Smtp:Port"] ?? "",
+            builder.Configuration["Email:RecipientEmail"] ?? ""
         );
+
+        return Results.Ok(new ContactResponse(
+            true,
+            false,
+            "Solicitud recibida. El correo no pudo enviarse, pero quedo registrada."
+        ));
     }
 
     return Results.Ok(new ContactResponse(
         true,
-        "Solicitud recibida. Tensión Retro se pondrá en contacto pronto."
+        true,
+        "Solicitud recibida. Tension Retro se pondra en contacto pronto."
     ));
 })
 .WithName("SendContactMessage");
@@ -554,6 +671,7 @@ public class ContactDbContext : DbContext
     public DbSet<VisitEvent> VisitEvents { get; set; } = null!;
     public DbSet<VisitSession> VisitSessions { get; set; } = null!;
     public DbSet<AdminUser> AdminUsers { get; set; } = null!;
+    public DbSet<PresentationEventEntity> PresentationEvents { get; set; } = null!;
 }
 
 public class ContactRequestEntity
@@ -616,6 +734,22 @@ public class AdminUser
     public DateTimeOffset CreatedAt { get; set; }
 }
 
+public class PresentationEventEntity
+{
+    public int Id { get; set; }
+    public string Title { get; set; } = "";
+    public string Venue { get; set; } = "";
+    public string City { get; set; } = "";
+    public string EventDate { get; set; } = "";
+    public string EventTime { get; set; } = "";
+    public string Description { get; set; } = "";
+    public string? FacebookUrl { get; set; }
+    public string Status { get; set; } = "upcoming";
+    public DateTimeOffset CreatedAt { get; set; }
+
+    public DateOnly EventDateValue => DateOnly.ParseExact(EventDate, "yyyy-MM-dd", CultureInfo.InvariantCulture);
+}
+
 public record VisitCounterResponse(int Count, string? SessionId = null);
 
 public record VisitRequest(string? Path, string? SessionId);
@@ -667,6 +801,44 @@ public record AdminCreateUserRequest(string Username, string DisplayName, string
 
 public record AdminChangePasswordRequest(string Username, string CurrentPassword, string NewPassword);
 
+public record PresentationEventRequest(
+    string Title,
+    string Venue,
+    string City,
+    string EventDate,
+    string EventTime,
+    string Description,
+    string? FacebookUrl,
+    string Status
+);
+
+public record PresentationEventResponse(
+    int Id,
+    string Title,
+    string Venue,
+    string City,
+    string EventDate,
+    string EventTime,
+    string Description,
+    string? FacebookUrl,
+    string Status,
+    DateTimeOffset CreatedAt
+)
+{
+    public static PresentationEventResponse From(PresentationEventEntity entity) => new(
+        entity.Id,
+        entity.Title,
+        entity.Venue,
+        entity.City,
+        entity.EventDate,
+        entity.EventTime,
+        entity.Description,
+        entity.FacebookUrl,
+        entity.Status,
+        entity.CreatedAt
+    );
+}
+
 public sealed record IpApiCountryResponse(
     [property: JsonPropertyName("country_name")] string? CountryName
 );
@@ -703,7 +875,7 @@ public record ContactSubmission(
     string? DetallesImportantes
 );
 
-public record ContactResponse(bool Success, string Message);
+public record ContactResponse(bool Success, bool EmailSent, string Message);
 
 public record WeatherForecast(DateOnly Date, int TemperatureC, string? Summary)
 {
@@ -712,6 +884,97 @@ public record WeatherForecast(DateOnly Date, int TemperatureC, string? Summary)
 
 public static class AdminHelpers
 {
+    public static bool TryNormalizePresentationEvent(
+        PresentationEventRequest request,
+        out PresentationEventRequest normalized,
+        out string message)
+    {
+        normalized = request;
+
+        if (string.IsNullOrWhiteSpace(request.Title) ||
+            string.IsNullOrWhiteSpace(request.Venue) ||
+            string.IsNullOrWhiteSpace(request.City) ||
+            string.IsNullOrWhiteSpace(request.EventDate) ||
+            string.IsNullOrWhiteSpace(request.EventTime) ||
+            string.IsNullOrWhiteSpace(request.Description))
+        {
+            message = "Completa título, venue, ciudad, fecha, hora y descripción.";
+            return false;
+        }
+
+        if (!DateOnly.TryParseExact(
+                request.EventDate.Trim(),
+                "yyyy-MM-dd",
+                CultureInfo.InvariantCulture,
+                DateTimeStyles.None,
+                out var eventDate))
+        {
+            message = "La fecha del evento debe usar el formato YYYY-MM-DD.";
+            return false;
+        }
+
+        if (!TimeOnly.TryParseExact(
+                request.EventTime.Trim(),
+                "HH:mm",
+                CultureInfo.InvariantCulture,
+                DateTimeStyles.None,
+                out var eventTime))
+        {
+            message = "La hora del evento debe usar el formato HH:mm.";
+            return false;
+        }
+
+        if (!TryParsePresentationStatus(request.Status, out var status))
+        {
+            message = "El estado del evento debe ser upcoming o completed.";
+            return false;
+        }
+
+        var facebookUrl = string.IsNullOrWhiteSpace(request.FacebookUrl)
+            ? null
+            : request.FacebookUrl.Trim();
+
+        if (!string.IsNullOrWhiteSpace(facebookUrl) &&
+            !Uri.TryCreate(facebookUrl, UriKind.Absolute, out _))
+        {
+            message = "La URL de Facebook no es válida.";
+            return false;
+        }
+
+        normalized = request with
+        {
+            Title = request.Title.Trim(),
+            Venue = request.Venue.Trim(),
+            City = request.City.Trim(),
+            EventDate = eventDate.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
+            EventTime = eventTime.ToString("HH:mm", CultureInfo.InvariantCulture),
+            Description = request.Description.Trim(),
+            FacebookUrl = facebookUrl,
+            Status = status.ToString().ToLowerInvariant()
+        };
+
+        message = "";
+        return true;
+    }
+
+    private static bool TryParsePresentationStatus(
+        string? value,
+        out string status)
+    {
+        switch (value?.Trim().ToLowerInvariant())
+        {
+            case "upcoming":
+                status = "upcoming";
+                return true;
+            case "completed":
+                status = "completed";
+                return true;
+            default:
+                status = "upcoming";
+                return false;
+        }
+    }
+
     public static async Task UpsertVisitSessionAsync(
         HttpContext context,
         ContactDbContext db,

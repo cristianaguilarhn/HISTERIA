@@ -7,6 +7,16 @@ dist/
 # Env
 .env
 appsettings.Development.json
+**/appsettings.Development.json
+
+# Logs
+*.log
+*.err.log
+
+# SQLite temp files
+*.db-shm
+*.db-wal
+
 # VSCode
 .vscode/*
 !.vscode/extensions.json

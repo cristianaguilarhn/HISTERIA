@@ -17,7 +17,7 @@
       "Port": 587,
       "EnableSsl": true,
       "Username": "tu@email.com",
-      "Password": "xxxx xxxx xxxx xxxx"
+      "Password": "tu_app_password_de_gmail"
     }
   },
   "Admin": {

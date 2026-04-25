@@ -13,4 +13,7 @@ public sealed class SmtpOptions
     public bool EnableSsl { get; init; } = true;
     public string Username { get; init; } = "";
     public string Password { get; init; } = "";
+    public string FromEmail { get; init; } = "";
+    public string FromName { get; init; } = "";
+    public string RecipientEmail { get; init; } = "";
 }

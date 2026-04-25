@@ -6,10 +6,12 @@
   useState,
 } from "react";
 import {
+  getUpcomingEvents,
   registerVisit,
   sendVisitHeartbeat,
   sendContactMessage,
   type ContactFormPayload,
+  type PresentationEvent,
 } from "./services/api";
 import { AdminPanel } from "./components/AdminPanel";
 import { MemberCard } from "./components/MemberCard";
@@ -42,6 +44,12 @@ const IconMusic = (props: IconProps) => (
 const IconCalendar = (props: IconProps) => (
   <svg viewBox="0 0 24 24" aria-hidden="true" {...props}>
     <path d="M7 2h2v2h6V2h2v2h3v17H4V4h3V2Zm13 8H4v9h16v-9Z" />
+  </svg>
+);
+
+const IconArrow = (props: IconProps) => (
+  <svg viewBox="0 0 24 24" aria-hidden="true" {...props}>
+    <path d="m13.2 5.8 5.5 6.2-5.5 6.2-1.5-1.3 3.5-3.9H4v-2h11.2l-3.5-3.9 1.5-1.3Z" />
   </svg>
 );
 
@@ -158,7 +166,6 @@ const footerSocialLinks: Array<{
     name: "YouTube",
     url: null,
     icon: IconYouTube,
-    note: "Próximamente",
   },
 ];
 
@@ -234,6 +241,9 @@ function App() {
 function PublicLanding() {
   const [visitCount, setVisitCount] = useState<number | null>(null);
   const [visitStatus, setVisitStatus] = useState<VisitCounterStatus>("loading");
+  const [events, setEvents] = useState<PresentationEvent[]>([]);
+  const [eventsError, setEventsError] = useState(false);
+  const [showAllEvents, setShowAllEvents] = useState(false);
   const [form, setForm] = useState<ContactFormPayload>(initialForm);
   const [isSending, setIsSending] = useState(false);
   const [formStatus, setFormStatus] = useState<FormStatus>(null);
@@ -275,6 +285,18 @@ function PublicLanding() {
         console.error(error);
       });
     };
+
+    getUpcomingEvents()
+      .then((nextEvents) => {
+        setEvents(nextEvents);
+        setEventsError(false);
+      })
+      .catch((error) => {
+        console.error(error);
+        setEvents([]);
+        setEventsError(true);
+      });
+
     const heartbeatInterval = window.setInterval(heartbeat, 30000);
 
     return () => {
@@ -299,7 +321,10 @@ function PublicLanding() {
       const response = await sendContactMessage(form);
       setFormStatus({
         tone: response.success ? "success" : "error",
-        message: response.message,
+        message:
+          response.success && !response.emailSent
+            ? "Solicitud registrada. Te contactaremos pronto."
+            : response.message,
       });
       setForm(initialForm);
     } catch (error) {
@@ -323,6 +348,8 @@ function PublicLanding() {
   const visitCaption = hasVisitCountError
     ? "contador sincronizando"
     : "visitas registradas";
+  const visibleEvents = showAllEvents ? events : events.slice(0, 3);
+  const hasHiddenEvents = events.length > 3;
 
   return (
     <main className="site-shell">
@@ -507,6 +534,80 @@ function PublicLanding() {
             </span>
           ))}
         </div>
+      </section>
+
+      <section
+        className="content-section upcoming-section reveal"
+        id="fechas"
+        aria-labelledby="upcoming-title"
+      >
+        <div className="section-heading upcoming-heading">
+          <p className="section-kicker">
+            <IconCalendar className="inline-icon" /> Próximas presentaciones
+          </p>
+          <h2 id="upcoming-title">Fechas confirmadas para vernos en vivo.</h2>
+          <p>
+            Sigue las próximas fechas de Tensión Retro y guarda tu lugar para la
+            siguiente noche de covers, clásicos e indie.
+          </p>
+        </div>
+
+        {events.length === 0 ? (
+          <div className="upcoming-empty">
+            <span className="date-badge">Muy pronto</span>
+            <p>
+              {eventsError
+                ? "Muy pronto anunciaremos nuevas fechas"
+                : "Muy pronto anunciaremos nuevas fechas"}
+            </p>
+          </div>
+        ) : (
+          <>
+            <div className="upcoming-grid">
+              {visibleEvents.map((event) => (
+                <article className="upcoming-card" key={event.id}>
+                  <div className="upcoming-card-head">
+                    <span className="date-badge">
+                      {formatEventBadge(event.eventDate)}
+                    </span>
+                    <span className="upcoming-time">
+                      <IconCalendar className="inline-icon" />
+                      {formatEventDate(event.eventDate)} ·{" "}
+                      {formatEventTime(event.eventTime)}
+                    </span>
+                  </div>
+                  <h3>{event.title}</h3>
+                  <p className="upcoming-location">
+                    {event.venue}, {event.city}
+                  </p>
+                  <p className="upcoming-description">{event.description}</p>
+                  {event.facebookUrl && (
+                    <a
+                      className="button button-secondary upcoming-link"
+                      href={event.facebookUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                    >
+                      Ver evento <IconArrow className="button-icon" />
+                    </a>
+                  )}
+                </article>
+              ))}
+            </div>
+
+            {hasHiddenEvents && (
+              <div className="upcoming-actions">
+                <button
+                  className="button button-secondary"
+                  type="button"
+                  onClick={() => setShowAllEvents((current) => !current)}
+                >
+                  {showAllEvents ? "Ver menos fechas" : "Ver más fechas"}
+                </button>
+              </div>
+            )}
+          </>
+        )}
       </section>
 
       <section className="content-section contact-section reveal" id="contratacion">
@@ -772,4 +873,26 @@ function PublicLanding() {
 
 
 export default App;
+
+function formatEventDate(value: string) {
+  return new Intl.DateTimeFormat("es-HN", {
+    month: "long",
+    day: "numeric",
+    weekday: "long",
+  }).format(new Date(`${value}T00:00:00`));
+}
+
+function formatEventBadge(value: string) {
+  return new Intl.DateTimeFormat("es-HN", {
+    month: "short",
+    day: "numeric",
+  }).format(new Date(`${value}T00:00:00`));
+}
+
+function formatEventTime(value: string) {
+  return new Intl.DateTimeFormat("es-HN", {
+    hour: "numeric",
+    minute: "2-digit",
+  }).format(new Date(`1970-01-01T${value}`));
+}
 
