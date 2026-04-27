@@ -3,6 +3,7 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -14,134 +15,69 @@ builder.Services.Configure<EmailOptions>(builder.Configuration.GetSection("Email
 builder.Services.AddSingleton<IEmailSender, SmtpEmailSender>();
 builder.Services.AddHttpClient();
 
-// Configure SQLite
+var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+var isPostgreSqlConnection = !string.IsNullOrWhiteSpace(connectionString) &&
+    connectionString.Contains("Host=", StringComparison.OrdinalIgnoreCase);
+
 builder.Services.AddDbContext<ContactDbContext>(options =>
-    options.UseSqlite(builder.Configuration.GetConnectionString("DefaultConnection") 
-        ?? "Data Source=tensionretro.db"));
+{
+    if (builder.Environment.IsProduction() && !isPostgreSqlConnection)
+    {
+        throw new InvalidOperationException(
+            "Production requires ConnectionStrings__DefaultConnection pointing to PostgreSQL."
+        );
+    }
+
+    if (isPostgreSqlConnection)
+    {
+        options.UseNpgsql(connectionString);
+    }
+    else
+    {
+        var devConnectionString = connectionString ?? "Data Source=tensionretro.db";
+        options.UseSqlite(devConnectionString);
+    }
+});
+
+// Configure CORS with environment-specific origins
+var allowedOrigins = builder.Configuration["AllowedOrigins"] ?? "http://localhost:5173";
+var origins = allowedOrigins.Split(";", StringSplitOptions.RemoveEmptyEntries);
 
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowFrontend", policy =>
     {
         policy
-            .WithOrigins("http://localhost:5173")
+            .WithOrigins(origins)
             .AllowAnyHeader()
-            .AllowAnyMethod();
+            .AllowAnyMethod()
+            .AllowCredentials();
     });
 });
 
-// Get admin settings from config. Admin:ApiKey is kept as a fallback so the
-// current local setup continues working until Admin:Password is configured.
-var adminApiKey = builder.Configuration["Admin:ApiKey"] ?? "";
-var adminPassword = builder.Configuration["Admin:Password"] ?? adminApiKey;
-var adminTokenSecret = builder.Configuration["Admin:TokenSecret"] ?? adminApiKey;
-var defaultAdminUser = builder.Configuration["Admin:DefaultUser"] ?? "Cristian";
+// Get admin settings from config or environment variables
+// Fallback chain: Environment Variables > appsettings > hardcoded defaults (dev only)
+var adminApiKey = Environment.GetEnvironmentVariable("ADMIN_API_KEY") 
+    ?? builder.Configuration["Admin:ApiKey"] 
+    ?? "";
+var adminPassword = Environment.GetEnvironmentVariable("ADMIN_PASSWORD")
+    ?? builder.Configuration["Admin:Password"] 
+    ?? adminApiKey;
+var adminTokenSecret = Environment.GetEnvironmentVariable("ADMIN_TOKEN_SECRET")
+    ?? builder.Configuration["Admin:TokenSecret"] 
+    ?? adminApiKey;
+var defaultAdminUser = Environment.GetEnvironmentVariable("ADMIN_DEFAULT_USER")
+    ?? builder.Configuration["Admin:DefaultUser"] 
+    ?? "Cristian";
 
 var app = builder.Build();
 
-// Initialize database
-using (var scope = app.Services.CreateScope())
-{
-    var db = scope.ServiceProvider.GetRequiredService<ContactDbContext>();
-    db.Database.EnsureCreated();
-    db.Database.ExecuteSqlRaw("""
-        CREATE TABLE IF NOT EXISTS "VisitEvents" (
-            "Id" INTEGER NOT NULL CONSTRAINT "PK_VisitEvents" PRIMARY KEY AUTOINCREMENT,
-            "VisitedAt" TEXT NOT NULL,
-            "Path" TEXT NULL,
-            "SessionId" TEXT NULL,
-            "UserAgent" TEXT NULL
-        );
-        """);
-    try
-    {
-        db.Database.ExecuteSqlRaw("""ALTER TABLE "VisitEvents" ADD COLUMN "SessionId" TEXT NULL;""");
-    }
-    catch
-    {
-        // Existing local databases may already have this lightweight migration.
-    }
-    db.Database.ExecuteSqlRaw("""
-        CREATE TABLE IF NOT EXISTS "VisitSessions" (
-            "Id" INTEGER NOT NULL CONSTRAINT "PK_VisitSessions" PRIMARY KEY AUTOINCREMENT,
-            "SessionId" TEXT NOT NULL,
-            "FirstSeenAt" TEXT NOT NULL,
-            "LastSeenAt" TEXT NOT NULL,
-            "Path" TEXT NULL,
-            "UserAgent" TEXT NULL
-        );
-        """);
-    db.Database.ExecuteSqlRaw("""
-        CREATE TABLE IF NOT EXISTS "AdminUsers" (
-            "Id" INTEGER NOT NULL CONSTRAINT "PK_AdminUsers" PRIMARY KEY AUTOINCREMENT,
-            "Username" TEXT NOT NULL,
-            "DisplayName" TEXT NOT NULL,
-            "PasswordHash" TEXT NOT NULL,
-            "CreatedAt" TEXT NOT NULL
-        );
-        """);
-    db.Database.ExecuteSqlRaw("""
-        CREATE TABLE IF NOT EXISTS "PresentationEvents" (
-            "Id" INTEGER NOT NULL CONSTRAINT "PK_PresentationEvents" PRIMARY KEY AUTOINCREMENT,
-            "Title" TEXT NOT NULL,
-            "Venue" TEXT NOT NULL,
-            "City" TEXT NOT NULL,
-            "EventDate" TEXT NOT NULL,
-            "EventTime" TEXT NOT NULL,
-            "Description" TEXT NOT NULL,
-            "FacebookUrl" TEXT NULL,
-            "Status" TEXT NOT NULL,
-            "CreatedAt" TEXT NOT NULL
-        );
-        """);
-    db.Database.ExecuteSqlRaw("""
-        CREATE UNIQUE INDEX IF NOT EXISTS "IX_AdminUsers_Username"
-        ON "AdminUsers" ("Username");
-        """);
-    db.Database.ExecuteSqlRaw("""
-        CREATE UNIQUE INDEX IF NOT EXISTS "IX_VisitSessions_SessionId"
-        ON "VisitSessions" ("SessionId");
-        """);
-    foreach (var statement in new[]
-    {
-        """ALTER TABLE "VisitSessions" ADD COLUMN "IpAddress" TEXT NULL;""",
-        """ALTER TABLE "VisitSessions" ADD COLUMN "Country" TEXT NULL;"""
-    })
-    {
-        try
-        {
-            db.Database.ExecuteSqlRaw(statement);
-        }
-        catch
-        {
-            // Existing local databases may already have these lightweight migrations.
-        }
-    }
-
-    if (!string.IsNullOrWhiteSpace(adminPassword))
-    {
-        var defaultUsername = defaultAdminUser.Trim();
-        var defaultUser = db.AdminUsers.FirstOrDefault(user => user.Username == defaultUsername);
-
-        if (defaultUser == null)
-        {
-            db.AdminUsers.Add(new AdminUser
-            {
-                Username = defaultUsername,
-                DisplayName = defaultUsername,
-                PasswordHash = AdminHelpers.HashPassword(adminPassword),
-                CreatedAt = DateTimeOffset.UtcNow
-            });
-        }
-        else if (app.Environment.IsDevelopment() &&
-            !AdminHelpers.VerifyPassword(adminPassword, defaultUser.PasswordHash))
-        {
-            defaultUser.PasswordHash = AdminHelpers.HashPassword(adminPassword);
-        }
-
-        db.SaveChanges();
-    }
-}
+await DatabaseBootstrapper.InitializeAsync(
+    app.Services,
+    app.Environment,
+    adminPassword,
+    defaultAdminUser
+);
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
@@ -149,8 +85,32 @@ if (app.Environment.IsDevelopment())
     app.MapOpenApi();
 }
 
+var forwardedHeadersOptions = new ForwardedHeadersOptions
+{
+    ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto
+};
+forwardedHeadersOptions.KnownIPNetworks.Clear();
+forwardedHeadersOptions.KnownProxies.Clear();
+
+app.UseForwardedHeaders(forwardedHeadersOptions);
 app.UseHttpsRedirection();
 app.UseCors("AllowFrontend");
+
+app.MapGet("/health", async (ContactDbContext db) =>
+{
+    try
+    {
+        var canConnect = await db.Database.CanConnectAsync();
+        return canConnect
+            ? Results.Ok(new { status = "ok" })
+            : Results.Problem(statusCode: StatusCodes.Status503ServiceUnavailable, title: "Database unavailable");
+    }
+    catch
+    {
+        return Results.Problem(statusCode: StatusCodes.Status503ServiceUnavailable, title: "Health check failed");
+    }
+})
+.WithName("HealthCheck");
 
 app.MapPost("/auth/login", async (ContactDbContext db, AdminLoginRequest request) =>
 {
@@ -672,6 +632,154 @@ public class ContactDbContext : DbContext
     public DbSet<VisitSession> VisitSessions { get; set; } = null!;
     public DbSet<AdminUser> AdminUsers { get; set; } = null!;
     public DbSet<PresentationEventEntity> PresentationEvents { get; set; } = null!;
+
+    protected override void OnModelCreating(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<AdminUser>()
+            .HasIndex(item => item.Username)
+            .IsUnique();
+
+        modelBuilder.Entity<VisitSession>()
+            .HasIndex(item => item.SessionId)
+            .IsUnique();
+    }
+}
+
+public static class DatabaseBootstrapper
+{
+    public static async Task InitializeAsync(
+        IServiceProvider services,
+        IHostEnvironment environment,
+        string adminPassword,
+        string defaultAdminUser)
+    {
+        using var scope = services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<ContactDbContext>();
+
+        if (db.Database.IsSqlite())
+        {
+            InitializeSqlite(db);
+        }
+        else
+        {
+            // Temporary PostgreSQL bootstrap until formal EF migrations are added.
+            await db.Database.EnsureCreatedAsync();
+        }
+
+        await EnsureDefaultAdminAsync(db, environment, adminPassword, defaultAdminUser);
+    }
+
+    private static void InitializeSqlite(ContactDbContext db)
+    {
+        db.Database.EnsureCreated();
+        db.Database.ExecuteSqlRaw("""
+            CREATE TABLE IF NOT EXISTS "VisitEvents" (
+                "Id" INTEGER NOT NULL CONSTRAINT "PK_VisitEvents" PRIMARY KEY AUTOINCREMENT,
+                "VisitedAt" TEXT NOT NULL,
+                "Path" TEXT NULL,
+                "SessionId" TEXT NULL,
+                "UserAgent" TEXT NULL
+            );
+            """);
+
+        TryExecuteSqliteAlter(db, """ALTER TABLE "VisitEvents" ADD COLUMN "SessionId" TEXT NULL;""");
+
+        db.Database.ExecuteSqlRaw("""
+            CREATE TABLE IF NOT EXISTS "VisitSessions" (
+                "Id" INTEGER NOT NULL CONSTRAINT "PK_VisitSessions" PRIMARY KEY AUTOINCREMENT,
+                "SessionId" TEXT NOT NULL,
+                "FirstSeenAt" TEXT NOT NULL,
+                "LastSeenAt" TEXT NOT NULL,
+                "Path" TEXT NULL,
+                "UserAgent" TEXT NULL
+            );
+            """);
+        db.Database.ExecuteSqlRaw("""
+            CREATE TABLE IF NOT EXISTS "AdminUsers" (
+                "Id" INTEGER NOT NULL CONSTRAINT "PK_AdminUsers" PRIMARY KEY AUTOINCREMENT,
+                "Username" TEXT NOT NULL,
+                "DisplayName" TEXT NOT NULL,
+                "PasswordHash" TEXT NOT NULL,
+                "CreatedAt" TEXT NOT NULL
+            );
+            """);
+        db.Database.ExecuteSqlRaw("""
+            CREATE TABLE IF NOT EXISTS "PresentationEvents" (
+                "Id" INTEGER NOT NULL CONSTRAINT "PK_PresentationEvents" PRIMARY KEY AUTOINCREMENT,
+                "Title" TEXT NOT NULL,
+                "Venue" TEXT NOT NULL,
+                "City" TEXT NOT NULL,
+                "EventDate" TEXT NOT NULL,
+                "EventTime" TEXT NOT NULL,
+                "Description" TEXT NOT NULL,
+                "FacebookUrl" TEXT NULL,
+                "Status" TEXT NOT NULL,
+                "CreatedAt" TEXT NOT NULL
+            );
+            """);
+        db.Database.ExecuteSqlRaw("""
+            CREATE UNIQUE INDEX IF NOT EXISTS "IX_AdminUsers_Username"
+            ON "AdminUsers" ("Username");
+            """);
+        db.Database.ExecuteSqlRaw("""
+            CREATE UNIQUE INDEX IF NOT EXISTS "IX_VisitSessions_SessionId"
+            ON "VisitSessions" ("SessionId");
+            """);
+
+        foreach (var statement in new[]
+        {
+            """ALTER TABLE "VisitSessions" ADD COLUMN "IpAddress" TEXT NULL;""",
+            """ALTER TABLE "VisitSessions" ADD COLUMN "Country" TEXT NULL;"""
+        })
+        {
+            TryExecuteSqliteAlter(db, statement);
+        }
+    }
+
+    private static void TryExecuteSqliteAlter(ContactDbContext db, string statement)
+    {
+        try
+        {
+            db.Database.ExecuteSqlRaw(statement);
+        }
+        catch
+        {
+            // Existing local SQLite databases may already have this lightweight migration.
+        }
+    }
+
+    private static async Task EnsureDefaultAdminAsync(
+        ContactDbContext db,
+        IHostEnvironment environment,
+        string adminPassword,
+        string defaultAdminUser)
+    {
+        if (string.IsNullOrWhiteSpace(adminPassword))
+        {
+            return;
+        }
+
+        var defaultUsername = defaultAdminUser.Trim();
+        var defaultUser = await db.AdminUsers.FirstOrDefaultAsync(user => user.Username == defaultUsername);
+
+        if (defaultUser == null)
+        {
+            db.AdminUsers.Add(new AdminUser
+            {
+                Username = defaultUsername,
+                DisplayName = defaultUsername,
+                PasswordHash = AdminHelpers.HashPassword(adminPassword),
+                CreatedAt = DateTimeOffset.UtcNow
+            });
+        }
+        else if (environment.IsDevelopment() &&
+            !AdminHelpers.VerifyPassword(adminPassword, defaultUser.PasswordHash))
+        {
+            defaultUser.PasswordHash = AdminHelpers.HashPassword(adminPassword);
+        }
+
+        await db.SaveChangesAsync();
+    }
 }
 
 public class ContactRequestEntity

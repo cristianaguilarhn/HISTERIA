@@ -1,18 +1,72 @@
-version: '3.8'
 services:
+  # PostgreSQL database for production-like local validation
   db:
-    image: mcr.microsoft.com/mssql/server:2019-latest
+    image: postgres:17-alpine
+    container_name: tensionretro-db
     environment:
-      ACCEPT_EULA: "Y"
-      SA_PASSWORD: "Your_password123"
+      POSTGRES_USER: tensionretro
+      POSTGRES_PASSWORD: local_dev_password_change_in_prod
+      POSTGRES_DB: tensionretro
     ports:
-      - "1433:1433"
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U tensionretro"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ASP.NET Core API backend (production-like container)
   api:
-    build: ../../backend/dotnet-api
-    depends_on: [db]
+    build:
+      context: ../../backend/dotnet-api
+      dockerfile: Dockerfile
+    container_name: tensionretro-api
+    depends_on:
+      db:
+        condition: service_healthy
     ports:
       - "5000:80"
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      ASPNETCORE_URLS: http://+:80
+      ConnectionStrings__DefaultConnection: "Host=db;Port=5432;Database=tensionretro;Username=tensionretro;Password=local_dev_password_change_in_prod"
+      AllowedOrigins: "http://localhost:3000;http://127.0.0.1:3000"
+      Admin__DefaultUser: "Cristian"
+      Admin__Password: "local-dev-password-change"
+      Admin__TokenSecret: "local-dev-token-secret-change"
+      Admin__ApiKey: "local-dev-api-key-change"
+      Email__Smtp__Host: "smtp.gmail.com"
+      Email__Smtp__Port: "587"
+      Email__Smtp__Username: "${SMTP_USERNAME:-your-email@gmail.com}"
+      Email__Smtp__Password: "${SMTP_PASSWORD:-your-app-password}"
+      Email__FromEmail: "${SMTP_USERNAME:-your-email@gmail.com}"
+      Email__RecipientEmail: "xtian.osx@gmail.com"
+    healthcheck:
+      test: ["CMD-SHELL", "curl --fail --silent http://localhost/health || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+  # React frontend served through nginx
   frontend:
-    build: ../../frontend/web-admin
+    build:
+      context: ../../frontend/web-admin
+      args:
+        VITE_API_URL: "http://localhost:5000"
+    container_name: tensionretro-web
     ports:
-      - "3000:3000"
+      - "3000:80"
+    depends_on:
+      - api
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://localhost/index.html || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+volumes:
+  postgres_data:
+    driver: local
