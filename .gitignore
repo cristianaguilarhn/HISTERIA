@@ -13,7 +13,8 @@ appsettings.Development.json
 *.log
 *.err.log
 
-# SQLite temp files
+# SQLite database
+*.db
 *.db-shm
 *.db-wal
 
