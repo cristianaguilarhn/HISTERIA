@@ -1,3 +1,5 @@
+import { apiBlob, apiRequest } from "../api/client";
+
 export type VisitCounter = {
   count: number;
   sessionId?: string;
@@ -24,6 +26,10 @@ export type ContactResponse = {
   message: string;
 };
 
+export type ApiLiveResponse = {
+  status: string;
+};
+
 export type AdminLoginResponse = {
   token: string;
   username: string;
@@ -34,6 +40,15 @@ export type AdminLoginResponse = {
 export type MetricPoint = {
   date: string;
   count: number;
+};
+
+export type ActiveSession = {
+  sessionId: string;
+  country?: string;
+  ipAddress?: string;
+  path?: string;
+  firstSeenAt: string;
+  lastSeenAt: string;
 };
 
 export type AdminMetrics = {
@@ -51,15 +66,6 @@ export type AdminMetrics = {
 export type ContactRequestRecord = ContactFormPayload & {
   id: number;
   receivedAt: string;
-};
-
-export type ActiveSession = {
-  sessionId: string;
-  country?: string;
-  ipAddress?: string;
-  path?: string;
-  firstSeenAt: string;
-  lastSeenAt: string;
 };
 
 export type AdminUser = {
@@ -107,264 +113,119 @@ export type CreatePresentationEventPayload = {
   status: PresentationStatus;
 };
 
-const API_URL = (import.meta.env.VITE_API_URL ?? "").replace(/\/$/, "");
+export function checkApiLive() {
+  return apiRequest<ApiLiveResponse>("/live");
+}
 
-export async function registerVisit(sessionId: string): Promise<VisitCounter> {
-  const response = await fetch(`${API_URL}/visits`, {
+export function registerVisit(sessionId: string) {
+  return apiRequest<VisitCounter>("/visits", {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
+    body: {
       path: `${window.location.pathname}${window.location.hash}`,
       sessionId,
-    }),
+    },
   });
-
-  if (!response.ok) {
-    throw new Error("No se pudo registrar la visita");
-  }
-
-  return response.json();
 }
 
-export async function sendContactMessage(
-  payload: ContactFormPayload
-): Promise<ContactResponse> {
-  const response = await fetch(`${API_URL}/contact`, {
+export function sendContactMessage(payload: ContactFormPayload) {
+  return apiRequest<ContactResponse>("/contact", {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(payload),
+    body: payload,
   });
-
-  const data = (await response.json()) as ContactResponse;
-
-  if (!response.ok) {
-    throw new Error(data.message || "No se pudo enviar el mensaje");
-  }
-
-  return data;
 }
 
-export async function loginAdmin(
-  memberName: string,
-  password: string
-): Promise<AdminLoginResponse> {
-  const response = await fetch(`${API_URL}/auth/login`, {
+export function loginAdmin(memberName: string, password: string) {
+  return apiRequest<AdminLoginResponse>("/auth/login", {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({ memberName, password }),
+    body: { memberName, password },
   });
-
-  if (!response.ok) {
-    throw new Error("No se pudo iniciar sesion. Revisa la contrasena.");
-  }
-
-  return response.json();
 }
 
-export async function sendVisitHeartbeat(sessionId: string): Promise<void> {
-  const response = await fetch(`${API_URL}/visits/heartbeat`, {
+export function sendVisitHeartbeat(sessionId: string) {
+  return apiRequest<void>("/visits/heartbeat", {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
+    body: {
       path: `${window.location.pathname}${window.location.hash}`,
       sessionId,
-    }),
+    },
   });
-
-  if (!response.ok) {
-    throw new Error("No se pudo actualizar la sesion activa");
-  }
 }
 
-export async function getAdminMetrics(token: string): Promise<AdminMetrics> {
-  const response = await fetch(`${API_URL}/admin/metrics`, {
-    headers: getAdminHeaders(token),
-  });
-
-  if (!response.ok) {
-    throw new Error("No se pudieron cargar las metricas.");
-  }
-
-  return response.json();
+export function getAdminMetrics(token: string) {
+  return apiRequest<AdminMetrics>("/admin/metrics", { authToken: token });
 }
 
-export async function getAdminContacts(
-  token: string
-): Promise<ContactRequestRecord[]> {
-  const response = await fetch(`${API_URL}/admin/contacts`, {
-    headers: getAdminHeaders(token),
+export function getAdminContacts(token: string) {
+  return apiRequest<ContactRequestRecord[]>("/admin/contacts", {
+    authToken: token,
   });
-
-  if (!response.ok) {
-    throw new Error("No se pudieron cargar las solicitudes.");
-  }
-
-  return response.json();
 }
 
-export async function downloadContactsCsv(token: string): Promise<Blob> {
-  const response = await fetch(`${API_URL}/admin/contacts/export`, {
-    headers: getAdminHeaders(token),
-  });
-
-  if (!response.ok) {
-    throw new Error("No se pudo exportar el CSV.");
-  }
-
-  return response.blob();
+export function downloadContactsCsv(token: string) {
+  return apiBlob("/admin/contacts/export", { authToken: token });
 }
 
-export async function deleteAdminContact(
-  token: string,
-  contactId: number
-): Promise<void> {
-  const response = await fetch(`${API_URL}/admin/contacts/${contactId}`, {
+export function deleteAdminContact(token: string, contactId: number) {
+  return apiRequest<void>(`/admin/contacts/${contactId}`, {
+    authToken: token,
     method: "DELETE",
-    headers: getAdminHeaders(token),
   });
-
-  if (!response.ok) {
-    throw new Error("No se pudo borrar la solicitud.");
-  }
 }
 
-export async function getAdminUsers(token: string): Promise<AdminUser[]> {
-  const response = await fetch(`${API_URL}/admin/users`, {
-    headers: getAdminHeaders(token),
+export function getAdminUsers(token: string) {
+  return apiRequest<AdminUser[]>("/admin/users", { authToken: token });
+}
+
+export function getUpcomingEvents() {
+  return apiRequest<PresentationEvent[]>("/events");
+}
+
+export function getAdminEvents(token: string) {
+  return apiRequest<PresentationEvent[]>("/admin/events", {
+    authToken: token,
   });
-
-  if (!response.ok) {
-    throw new Error("No se pudieron cargar las cuentas admin.");
-  }
-
-  return response.json();
 }
 
-export async function getUpcomingEvents(): Promise<PresentationEvent[]> {
-  const response = await fetch(`${API_URL}/events`);
-
-  if (!response.ok) {
-    throw new Error("No se pudieron cargar las próximas presentaciones.");
-  }
-
-  return response.json();
-}
-
-export async function getAdminEvents(
-  token: string
-): Promise<PresentationEvent[]> {
-  const response = await fetch(`${API_URL}/admin/events`, {
-    headers: getAdminHeaders(token),
-  });
-
-  if (!response.ok) {
-    throw new Error("No se pudieron cargar los eventos.");
-  }
-
-  return response.json();
-}
-
-export async function createAdminEvent(
+export function createAdminEvent(
   token: string,
   payload: CreatePresentationEventPayload
-): Promise<PresentationEvent> {
-  const response = await fetch(`${API_URL}/admin/events`, {
+) {
+  return apiRequest<PresentationEvent>("/admin/events", {
+    authToken: token,
     method: "POST",
-    headers: {
-      ...getAdminHeaders(token),
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(payload),
+    body: payload,
   });
-
-  if (!response.ok) {
-    const data = await response.json().catch(() => null);
-    throw new Error(data?.message || "No se pudo crear el evento.");
-  }
-
-  return response.json();
 }
 
-export async function deleteAdminEvent(
-  token: string,
-  eventId: number
-): Promise<void> {
-  const response = await fetch(`${API_URL}/admin/events/${eventId}`, {
+export function deleteAdminEvent(token: string, eventId: number) {
+  return apiRequest<void>(`/admin/events/${eventId}`, {
+    authToken: token,
     method: "DELETE",
-    headers: getAdminHeaders(token),
   });
-
-  if (!response.ok) {
-    const data = await response.json().catch(() => null);
-    throw new Error(data?.message || "No se pudo borrar el evento.");
-  }
 }
 
-export async function createAdminUser(
-  token: string,
-  payload: CreateAdminUserPayload
-): Promise<AdminUser> {
-  const response = await fetch(`${API_URL}/admin/users`, {
+export function createAdminUser(token: string, payload: CreateAdminUserPayload) {
+  return apiRequest<AdminUser>("/admin/users", {
+    authToken: token,
     method: "POST",
-    headers: {
-      ...getAdminHeaders(token),
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(payload),
+    body: payload,
   });
-
-  if (!response.ok) {
-    const data = await response.json().catch(() => null);
-    throw new Error(data?.message || "No se pudo crear la cuenta admin.");
-  }
-
-  return response.json();
 }
 
-export async function deleteAdminUser(
-  token: string,
-  userId: number
-): Promise<void> {
-  const response = await fetch(`${API_URL}/admin/users/${userId}`, {
+export function deleteAdminUser(token: string, userId: number) {
+  return apiRequest<void>(`/admin/users/${userId}`, {
+    authToken: token,
     method: "DELETE",
-    headers: getAdminHeaders(token),
   });
-
-  if (!response.ok) {
-    const data = await response.json().catch(() => null);
-    throw new Error(data?.message || "No se pudo borrar la cuenta admin.");
-  }
 }
 
-export async function changeAdminPassword(
+export function changeAdminPassword(
   token: string,
   payload: ChangeAdminPasswordPayload
-): Promise<void> {
-  const response = await fetch(`${API_URL}/admin/users/change-password`, {
+) {
+  return apiRequest<void>("/admin/users/change-password", {
+    authToken: token,
     method: "POST",
-    headers: {
-      ...getAdminHeaders(token),
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(payload),
+    body: payload,
   });
-
-  if (!response.ok) {
-    const data = await response.json().catch(() => null);
-    throw new Error(data?.message || "No se pudo cambiar la contrasena.");
-  }
-}
-
-function getAdminHeaders(token: string): HeadersInit {
-  return {
-    Authorization: `Bearer ${token}`,
-  };
 }

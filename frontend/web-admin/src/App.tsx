@@ -5,6 +5,7 @@
   useEffect,
   useState,
 } from "react";
+import { v4 as uuidv4 } from "uuid";
 import {
   getUpcomingEvents,
   registerVisit,
@@ -217,7 +218,7 @@ function getVisitorSessionId() {
     return existingSessionId;
   }
 
-  const nextSessionId = window.crypto.randomUUID();
+  const nextSessionId = uuidv4();
   window.localStorage.setItem(VISITOR_SESSION_KEY, nextSessionId);
   return nextSessionId;
 }

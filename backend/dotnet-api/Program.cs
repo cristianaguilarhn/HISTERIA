@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
+builder.Configuration.AddEnvironmentVariables();
 
 // Add services to the container.
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
@@ -21,21 +22,24 @@ var isPostgreSqlConnection = !string.IsNullOrWhiteSpace(connectionString) &&
 
 builder.Services.AddDbContext<ContactDbContext>(options =>
 {
-    if (builder.Environment.IsProduction() && !isPostgreSqlConnection)
+    if (string.IsNullOrWhiteSpace(connectionString))
     {
-        throw new InvalidOperationException(
-            "Production requires ConnectionStrings__DefaultConnection pointing to PostgreSQL."
-        );
+        return;
     }
 
     if (isPostgreSqlConnection)
     {
         options.UseNpgsql(connectionString);
     }
+    else if (builder.Environment.IsDevelopment())
+    {
+        options.UseSqlite(connectionString);
+    }
     else
     {
-        var devConnectionString = connectionString ?? "Data Source=tensionretro.db";
-        options.UseSqlite(devConnectionString);
+        throw new InvalidOperationException(
+            "Production requires ConnectionStrings__DefaultConnection pointing to PostgreSQL."
+        );
     }
 });
 
@@ -72,12 +76,23 @@ var defaultAdminUser = Environment.GetEnvironmentVariable("ADMIN_DEFAULT_USER")
 
 var app = builder.Build();
 
-await DatabaseBootstrapper.InitializeAsync(
-    app.Services,
-    app.Environment,
-    adminPassword,
-    defaultAdminUser
-);
+try
+{
+    await DatabaseBootstrapper.InitializeAsync(
+        app.Services,
+        app.Environment,
+        connectionString,
+        adminPassword,
+        defaultAdminUser
+    );
+}
+catch (Exception error)
+{
+    app.Logger.LogError(
+        error,
+        "Database bootstrap failed. The application will continue running; DB-backed endpoints may be unavailable."
+    );
+}
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
@@ -95,6 +110,9 @@ forwardedHeadersOptions.KnownProxies.Clear();
 app.UseForwardedHeaders(forwardedHeadersOptions);
 app.UseHttpsRedirection();
 app.UseCors("AllowFrontend");
+
+app.MapGet("/live", () => Results.Ok(new { status = "ok" }))
+.WithName("LivenessCheck");
 
 app.MapGet("/health", async (ContactDbContext db) =>
 {
@@ -650,9 +668,15 @@ public static class DatabaseBootstrapper
     public static async Task InitializeAsync(
         IServiceProvider services,
         IHostEnvironment environment,
+        string? connectionString,
         string adminPassword,
         string defaultAdminUser)
     {
+        if (string.IsNullOrWhiteSpace(connectionString))
+        {
+            return;
+        }
+
         using var scope = services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<ContactDbContext>();
 
