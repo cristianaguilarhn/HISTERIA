@@ -43,8 +43,7 @@ type EventsModuleStatus =
   | { tone: "error"; message: string }
   | { tone: "success"; message: string };
 
-const ADMIN_SESSION_KEY = "tensionretro-admin-session";
-const LOGO_SRC = "/logo.png";
+const ADMIN_SESSION_KEY = "histeria-admin-session";
 
 const IconLock = (props: IconProps) => (
   <svg viewBox="0 0 24 24" aria-hidden="true" {...props}>
@@ -188,16 +187,16 @@ function AdminLogin({
 
   return (
     <section className="admin-login-screen">
-      <a className="admin-brand" href="#inicio" aria-label="Volver a Tensión Retro">
-        <img src={LOGO_SRC} alt="Tensión Retro" />
-        <span>Tensión Retro</span>
+      <a className="admin-brand" href="#inicio" aria-label="Volver a Histeria">
+        <img src="/brand/icon-histeria.png" alt="" aria-hidden="true" />
+        <span>Histeria</span>
       </a>
 
       <form className="admin-login-card" onSubmit={handleLogin}>
         <p className="section-kicker">
           <IconLock className="inline-icon" /> Acceso privado
         </p>
-        <h1>Panel Tensión Retro</h1>
+        <h1>Panel Histeria</h1>
         <p>
           Gestión interna para métricas, solicitudes, usuarios y futuros
           módulos operativos.
@@ -413,7 +412,7 @@ function AdminWorkspace({
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.href = url;
-      link.download = `tensionretro-solicitudes-${new Date()
+      link.download = `histeria-solicitudes-${new Date()
         .toISOString()
         .slice(0, 10)}.csv`;
       link.click();
@@ -611,9 +610,9 @@ function AdminWorkspace({
   return (
     <div className="admin-layout">
       <aside className="admin-sidebar">
-        <a className="admin-brand" href="#inicio" aria-label="Volver a Tensión Retro">
-          <img src={LOGO_SRC} alt="Tensión Retro" />
-          <span>Tensión Retro</span>
+        <a className="admin-brand" href="#inicio" aria-label="Volver a Histeria">
+          <img src="/brand/icon-histeria.png" alt="" aria-hidden="true" />
+          <span>Histeria</span>
         </a>
 
         <nav className="admin-nav" aria-label="Módulos admin">
@@ -636,7 +635,7 @@ function AdminWorkspace({
             <p className="section-kicker">
               <IconLock className="inline-icon" /> Privado
             </p>
-            <h1>Panel Tensión Retro</h1>
+            <h1>Panel Histeria</h1>
             <p>Sesión activa: {session.memberName}</p>
           </div>
           <button className="button button-secondary" type="button" onClick={onLogout}>

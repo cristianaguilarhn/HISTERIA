@@ -7,10 +7,19 @@ type MemberCardProps = {
   name: string;
   role: string;
   bio: string;
+  photo: string;
+  photoPosition?: string;
   Icon: ComponentType<IconProps>;
 };
 
-export function MemberCard({ bio, Icon, name, role }: MemberCardProps) {
+export function MemberCard({
+  bio,
+  Icon,
+  name,
+  photo,
+  photoPosition,
+  role,
+}: MemberCardProps) {
   const cardRef = useRef<HTMLElement | null>(null);
   const glowRef = useRef<HTMLSpanElement | null>(null);
   const detailsRef = useRef<HTMLDivElement | null>(null);
@@ -205,6 +214,13 @@ export function MemberCard({ bio, Icon, name, role }: MemberCardProps) {
   return (
     <article className="member-card" ref={cardRef} tabIndex={0}>
       <span className="member-card-glow" ref={glowRef} aria-hidden="true" />
+      <div className="member-photo-frame">
+        <img
+          src={photo}
+          alt={`${name}, ${role} de Histeria`}
+          style={{ objectPosition: photoPosition }}
+        />
+      </div>
       <div className="member-card-main">
         <div className="member-copy">
           <span>{role}</span>
