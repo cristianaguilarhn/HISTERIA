@@ -620,7 +620,7 @@ app.MapPost("/contact", async (ContactRequest request, IEmailSender emailSender,
         return Results.Ok(new ContactResponse(
             true,
             false,
-            "Solicitud recibida. El correo no pudo enviarse, pero quedo registrada."
+            "Solicitud recibida. El correo no pudo enviarse, pero quedó registrada."
         ));
     }
 
