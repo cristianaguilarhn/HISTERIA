@@ -14,7 +14,10 @@ builder.Configuration.AddEnvironmentVariables();
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 builder.Services.AddOpenApi();
 builder.Services.Configure<EmailOptions>(builder.Configuration.GetSection("Email"));
-builder.Services.AddSingleton<IEmailSender, SmtpEmailSender>();
+builder.Services.AddHttpClient<IEmailSender, ResendEmailSender>(client =>
+{
+    client.Timeout = TimeSpan.FromSeconds(10);
+});
 builder.Services.AddHttpClient();
 
 var connectionString = NormalizeDatabaseConnectionString(
@@ -597,12 +600,10 @@ app.MapPost("/contact", async (ContactRequest request, IEmailSender emailSender,
     {
         app.Logger.LogError(
             error,
-            "Fallo SMTP al enviar la solicitud #{Id}. Tipo={ErrorType}. Mensaje={ErrorMessage}. Host={Host}. Port={Port}. Recipient={RecipientEmail}.",
+            "Fallo el envio de correo para la solicitud #{Id}. Tipo={ErrorType}. Mensaje={ErrorMessage}. Recipient={RecipientEmail}.",
             submission.Id,
             error.GetType().Name,
             error.Message,
-            builder.Configuration["Email:Smtp:Host"] ?? "",
-            builder.Configuration["Email:Smtp:Port"] ?? "",
             builder.Configuration["Email:RecipientEmail"] ?? ""
         );
 

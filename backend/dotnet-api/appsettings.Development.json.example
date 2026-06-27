@@ -10,14 +10,11 @@
   },
   "Email": {
     "RecipientEmail": "tu@email.com",
-    "FromEmail": "tu@email.com",
-    "FromName": "Tensión Retro",
-    "Smtp": {
-      "Host": "smtp.gmail.com",
-      "Port": 587,
-      "EnableSsl": true,
-      "Username": "tu@email.com",
-      "Password": "tu_app_password_de_gmail"
+    "FromName": "Histeria",
+    "Resend": {
+      "ApiKey": "re_xxxxxxxxx",
+      "ApiUrl": "https://api.resend.com/emails",
+      "FromEmail": "onboarding@resend.dev"
     }
   },
   "Admin": {

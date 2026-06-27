@@ -52,13 +52,19 @@ VITE_API_URL=https://histeria-api.onrender.com
 
 El contador registra visitas totales, visitas por día y sesiones activas. Toda la información queda almacenada en PostgreSQL.
 
-## Correo SMTP opcional
+## Notificaciones por correo con Resend
 
-Los formularios se guardan aunque el correo no esté configurado. Para recibir además una notificación por correo, agrega estas variables en la API de Render:
+Render Free bloquea los puertos SMTP. La API usa Resend por HTTPS y el formulario
+continúa guardando aunque el correo no esté configurado.
+
+En **Render > histeria-api > Environment**, agrega:
 
 ```text
-Email__Smtp__Username
-Email__Smtp__Password
-Email__FromEmail
-Email__RecipientEmail
+Email__Resend__ApiKey=re_...
+Email__Resend__FromEmail=onboarding@resend.dev
+Email__RecipientEmail=tu-correo@gmail.com
 ```
+
+`onboarding@resend.dev` sirve para la prueba inicial y solo puede enviar al correo
+propietario de la cuenta Resend. Para otros destinatarios, verifica un dominio en
+Resend y cambia `Email__Resend__FromEmail`.

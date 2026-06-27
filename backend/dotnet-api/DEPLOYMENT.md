@@ -25,14 +25,10 @@ ADMIN_API_KEY=<LONG_RANDOM_API_KEY>
 # CORS
 AllowedOrigins=https://tensionretro.com;https://www.tensionretro.com
 
-# Email SMTP
-Email__Smtp__Host=smtp.gmail.com
-Email__Smtp__Port=587
-Email__Smtp__EnableSsl=true
-Email__Smtp__Username=<GMAIL_ACCOUNT>
-Email__Smtp__Password=<GMAIL_APP_PASSWORD>
-Email__FromEmail=<GMAIL_ACCOUNT>
-Email__FromName=Tensión Retro
+# Email por API HTTPS
+Email__Resend__ApiKey=<RESEND_API_KEY>
+Email__Resend__FromEmail=<VERIFIED_SENDER_OR_ONBOARDING_ADDRESS>
+Email__FromName=Histeria
 Email__RecipientEmail=<NOTIFICATION_EMAIL>
 
 # Aplicación
@@ -74,8 +70,8 @@ aws secretsmanager create-secret \
   --secret-string '{"password":"<STRONG_PASSWORD>","tokenSecret":"<LONG_RANDOM_SECRET>","apiKey":"<LONG_RANDOM_API_KEY>"}'
 
 aws secretsmanager create-secret \
-  --name tensionretro/smtp \
-  --secret-string '{"username":"<GMAIL_ACCOUNT>","password":"<GMAIL_APP_PASSWORD>"}'
+  --name tensionretro/resend \
+  --secret-string '{"apiKey":"<RESEND_API_KEY>"}'
 ```
 
 En ECS Task Definition usa `valueFrom` para inyectar secretos.
@@ -115,7 +111,7 @@ Servicios esperados:
 - [ ] Secrets en Secrets Manager
 - [ ] Dominio y certificado ACM listos
 - [ ] `AllowedOrigins` configurado con dominios reales
-- [ ] SMTP verificado con App Password
+- [ ] Resend verificado con una API key
 - [ ] Backend responde `GET /health`
 - [ ] Frontend compilado con `VITE_API_URL` pública del backend
 - [ ] Plan de migraciones EF definido

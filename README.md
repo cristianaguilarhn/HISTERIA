@@ -55,7 +55,7 @@ docker-compose up
 **Credenciales por defecto:**
 - Admin User: `Cristian`
 - Admin Password: (ver docker-compose.yml)
-- SMTP: Gmail (configurar en env vars)
+- Correo: Resend por HTTPS (configurar en env vars)
 
 ---
 
@@ -99,8 +99,9 @@ Crear `backend/dotnet-api/.env.local`:
 ASPNETCORE_ENVIRONMENT=Development
 ADMIN_PASSWORD=dev-password
 ADMIN_TOKEN_SECRET=dev-token
-Email__Smtp__Username=your-email@gmail.com
-Email__Smtp__Password=your-gmail-app-password
+Email__Resend__ApiKey=re_xxxxxxxxx
+Email__Resend__FromEmail=onboarding@resend.dev
+Email__RecipientEmail=your-email@gmail.com
 ```
 
 Ver `backend/dotnet-api/.env.example` para la lista completa.

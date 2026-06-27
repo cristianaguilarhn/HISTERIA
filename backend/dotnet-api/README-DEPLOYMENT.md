@@ -41,7 +41,8 @@ ConnectionStrings__DefaultConnection=Host=<RDS_ENDPOINT>;Port=5432;Database=tens
 ADMIN_PASSWORD=<STRONG_PASSWORD>
 ADMIN_TOKEN_SECRET=<LONG_RANDOM_SECRET>
 ADMIN_API_KEY=<LONG_RANDOM_API_KEY>
-Email__Smtp__Password=<GMAIL_APP_PASSWORD>
+Email__Resend__ApiKey=<RESEND_API_KEY>
+Email__RecipientEmail=<NOTIFICATION_EMAIL>
 ```
 
 ## Nota sobre base de datos

@@ -34,7 +34,8 @@ docker-compose up
 # backend/dotnet-api/.env.local (no se commitea)
 ADMIN_PASSWORD=dev-password
 ADMIN_TOKEN_SECRET=dev-token
-Email__Smtp__Password=your-gmail-app-password
+Email__Resend__ApiKey=re_xxxxxxxxx
+Email__RecipientEmail=your-email@gmail.com
 ```
 
 ### Ver template
@@ -181,7 +182,7 @@ grep -r "twyn xuaf" .  # Buscar app password viejo
 ```bash
 # backend/dotnet-api/.env.local
 ADMIN_PASSWORD=mi-super-contraseña-secreta
-Email__Smtp__Password=mi-app-password-gmail
+Email__Resend__ApiKey=re_xxxxxxxxx
 ```
 
 ---
