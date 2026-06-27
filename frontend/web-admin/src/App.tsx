@@ -1,5 +1,6 @@
 import {
   type ComponentType,
+  type CSSProperties,
   type FormEvent,
   type SVGProps,
   useEffect,
@@ -440,19 +441,44 @@ function PublicLanding() {
           </div>
         ) : (
           <div className="upcoming-grid">
-            {events.slice(0, 3).map((event) => (
-              <article className="upcoming-card" key={event.id}>
-                <span className="date-badge">{formatEventBadge(event.eventDate)}</span>
-                <h3>{event.title}</h3>
-                <p>
-                  {event.venue}, {event.city}
-                </p>
-                <p>
-                  {formatEventDate(event.eventDate)} • {formatEventTime(event.eventTime)}
-                </p>
+            {events.slice(0, 3).map((event, index) => (
+              <article
+                className="upcoming-card"
+                key={event.id}
+                style={{ "--event-index": index } as CSSProperties}
+              >
+                <span className="event-card-corner" aria-hidden="true" />
+                <div className="event-card-heading">
+                  <span className="date-badge">
+                    <IconCalendar aria-hidden="true" />
+                    {formatEventBadge(event.eventDate)}
+                  </span>
+                  <span className="event-confirmed">
+                    <span aria-hidden="true" />
+                    Confirmado
+                  </span>
+                </div>
+                <div className="event-card-content">
+                  <h3>{event.title}</h3>
+                  <p className="event-card-detail">
+                    <IconMap aria-hidden="true" />
+                    <span>{event.venue}, {event.city}</span>
+                  </p>
+                  <p className="event-card-time">
+                    <IconClock aria-hidden="true" />
+                    <span>
+                      {formatEventDate(event.eventDate)} • {formatEventTime(event.eventTime)}
+                    </span>
+                  </p>
+                </div>
                 {event.facebookUrl && (
-                  <a href={event.facebookUrl} target="_blank" rel="noreferrer">
-                    Ver evento
+                  <a
+                    className="event-card-link"
+                    href={event.facebookUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    Ver evento <span aria-hidden="true">↗</span>
                   </a>
                 )}
               </article>
@@ -678,6 +704,18 @@ const IconPhone = (props: IconProps) => (
 const IconMap = (props: IconProps) => (
   <svg viewBox="0 0 24 24" aria-hidden="true" {...props}>
     <path d="M12 2.5a7 7 0 0 0-7 7c0 5.2 7 12 7 12s7-6.8 7-12a7 7 0 0 0-7-7Zm0 9.6a2.6 2.6 0 1 1 0-5.2 2.6 2.6 0 0 1 0 5.2Z" />
+  </svg>
+);
+
+const IconCalendar = (props: IconProps) => (
+  <svg viewBox="0 0 24 24" aria-hidden="true" {...props}>
+    <path d="M7 2h2v2h6V2h2v2h3v17H4V4h3V2Zm11 8H6v9h12v-9ZM6 8h12V6H6v2Z" />
+  </svg>
+);
+
+const IconClock = (props: IconProps) => (
+  <svg viewBox="0 0 24 24" aria-hidden="true" {...props}>
+    <path d="M12 2a10 10 0 1 1 0 20 10 10 0 0 1 0-20Zm0 2a8 8 0 1 0 0 16 8 8 0 0 0 0-16Zm1 3v4.6l3.2 1.9-1 1.7-4.2-2.5V7h2Z" />
   </svg>
 );
 
