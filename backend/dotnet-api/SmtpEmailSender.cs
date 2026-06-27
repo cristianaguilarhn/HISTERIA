@@ -86,6 +86,13 @@ public sealed class SmtpEmailSender : IEmailSender
             throw new InvalidOperationException("Email:Smtp:Username no esta configurado.");
         }
 
+        if (IsPlaceholder(options.Smtp.Username))
+        {
+            throw new InvalidOperationException(
+                "Email:Smtp:Username sigue con un valor de ejemplo."
+            );
+        }
+
         if (string.IsNullOrWhiteSpace(options.Smtp.Password))
         {
             throw new InvalidOperationException(
@@ -105,7 +112,10 @@ public sealed class SmtpEmailSender : IEmailSender
     {
         var normalized = value.Trim();
         return normalized.Equals("TU_APP_PASSWORD_AQUI", StringComparison.OrdinalIgnoreCase) ||
-            normalized.Equals("xxxx xxxx xxxx xxxx", StringComparison.OrdinalIgnoreCase);
+            normalized.Equals("xxxx xxxx xxxx xxxx", StringComparison.OrdinalIgnoreCase) ||
+            normalized.Equals("your-email@gmail.com", StringComparison.OrdinalIgnoreCase) ||
+            normalized.Equals("your-app-password", StringComparison.OrdinalIgnoreCase) ||
+            normalized.Equals("your-app-password-here", StringComparison.OrdinalIgnoreCase);
     }
 
     private static string BuildHtmlBody(ContactSubmission request)
