@@ -217,9 +217,7 @@ svg {
   z-index: -2;
   width: 100%;
   height: calc(100% - 52px);
-  opacity: 0.88;
-  filter: blur(0.55px) saturate(0.97);
-  transform: scale(1.002);
+  opacity: 0.96;
 }
 
 .band-photo {

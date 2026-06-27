@@ -227,6 +227,8 @@ function PublicLanding() {
           src={HERO_PHOTO_SRC}
           alt="Foto grupal oficial de Histeria"
           className="hero-photo band-photo"
+          decoding="async"
+          fetchPriority="high"
         />
         <div className="hero-overlay" aria-hidden="true" />
 
