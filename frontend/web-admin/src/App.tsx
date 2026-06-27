@@ -711,8 +711,8 @@ const members = [
   {
     name: "Valeria Solís",
     role: "Vocalista",
-    bio: "Voz, presencia escenica y conexion directa con el publico.",
-    details: "Versatilidad vocal para recorrer baladas, pop, rock y ritmos bailables con una interpretacion cercana y potente.",
+    bio: "Voz, presencia escénica y conexión directa con el público.",
+    details: "Interpreta cada canción con matices propios, pasando de momentos íntimos a coros llenos de energía.",
     photo: "/images/members/valeria-solis.jpg",
     photoPosition: "50% 40%",
     icon: IconMic,
