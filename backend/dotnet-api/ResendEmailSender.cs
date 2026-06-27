@@ -74,7 +74,7 @@ public sealed class ResendEmailSender : IEmailSender
         if (!response.IsSuccessStatusCode)
         {
             throw new HttpRequestException(
-                $"Resend respondio {(int)response.StatusCode}: {Limit(responseBody, 500)}"
+                $"Resend respondió {(int)response.StatusCode}: {Limit(responseBody, 500)}"
             );
         }
 
@@ -91,14 +91,14 @@ public sealed class ResendEmailSender : IEmailSender
             IsPlaceholder(options.Resend.ApiKey))
         {
             throw new InvalidOperationException(
-                "Email:Resend:ApiKey no esta configurado."
+                "Email:Resend:ApiKey no está configurado."
             );
         }
 
         if (string.IsNullOrWhiteSpace(options.RecipientEmail))
         {
             throw new InvalidOperationException(
-                "Email:RecipientEmail no esta configurado."
+                "Email:RecipientEmail no está configurado."
             );
         }
 
@@ -106,7 +106,7 @@ public sealed class ResendEmailSender : IEmailSender
             string.IsNullOrWhiteSpace(options.FromEmail))
         {
             throw new InvalidOperationException(
-                "Email:Resend:FromEmail no esta configurado."
+                "Email:Resend:FromEmail no está configurado."
             );
         }
 
@@ -114,7 +114,7 @@ public sealed class ResendEmailSender : IEmailSender
             apiUri.Scheme != Uri.UriSchemeHttps)
         {
             throw new InvalidOperationException(
-                "Email:Resend:ApiUrl debe ser una direccion HTTPS valida."
+                "Email:Resend:ApiUrl debe ser una dirección HTTPS válida."
             );
         }
     }

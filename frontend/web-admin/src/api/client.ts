@@ -43,7 +43,7 @@ async function request(
   { authToken, body, headers, ...init }: ApiRequestOptions
 ): Promise<Response> {
   if (!apiBaseUrl) {
-    throw new ApiError("VITE_API_URL no esta configurada.", 0, null);
+    throw new ApiError("VITE_API_URL no está configurada.", 0, null);
   }
 
   const requestHeaders = new Headers(headers);

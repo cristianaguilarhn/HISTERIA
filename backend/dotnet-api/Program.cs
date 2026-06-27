@@ -445,7 +445,7 @@ app.MapDelete("/admin/users/{id:int}", async (HttpContext context, ContactDbCont
     var totalUsers = await db.AdminUsers.CountAsync();
     if (totalUsers <= 1)
     {
-        return Results.BadRequest(new { message = "No se puede eliminar la ultima cuenta admin." });
+        return Results.BadRequest(new { message = "No se puede eliminar la última cuenta admin." });
     }
 
     var user = await db.AdminUsers.FirstOrDefaultAsync(item => item.Id == id);
@@ -610,7 +610,7 @@ app.MapPost("/contact", async (ContactRequest request, IEmailSender emailSender,
     {
         app.Logger.LogError(
             error,
-            "Fallo el envio de correo para la solicitud #{Id}. Tipo={ErrorType}. Mensaje={ErrorMessage}. Recipient={RecipientEmail}.",
+            "Falló el envío de correo para la solicitud #{Id}. Tipo={ErrorType}. Mensaje={ErrorMessage}. Recipient={RecipientEmail}.",
             submission.Id,
             error.GetType().Name,
             error.Message,
@@ -627,7 +627,7 @@ app.MapPost("/contact", async (ContactRequest request, IEmailSender emailSender,
     return Results.Ok(new ContactResponse(
         true,
         true,
-        "Solicitud recibida. Tension Retro se pondra en contacto pronto."
+        "Solicitud recibida. Histeria se pondrá en contacto pronto."
     ));
 })
 .WithName("SendContactMessage");
@@ -1369,7 +1369,7 @@ public static class AdminHelpers
     public static string BuildContactCsv(IEnumerable<ContactRequestEntity> requests)
     {
         var builder = new StringBuilder();
-        builder.AppendLine("Id,Recibido,Nombre,Telefono,Correo,Evento,Tipo,Cantidad,Ubicacion,Fecha,Hora,Duracion,Presupuesto,Detalles");
+        builder.AppendLine("Id,Recibido,Nombre,Teléfono,Correo,Evento,Tipo,Cantidad,Ubicación,Fecha,Hora,Duración,Presupuesto,Detalles");
 
         foreach (var request in requests)
         {

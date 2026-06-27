@@ -192,7 +192,7 @@ function PublicLanding() {
         message:
           error instanceof Error
             ? error.message
-            : "No se pudo enviar la solicitud. Intentalo de nuevo.",
+            : "No se pudo enviar la solicitud. Inténtalo de nuevo.",
       });
     } finally {
       setIsSending(false);
@@ -208,7 +208,7 @@ function PublicLanding() {
 
   return (
     <main className="site-shell">
-      <header className="site-header" aria-label="Navegacion principal">
+      <header className="site-header" aria-label="Navegación principal">
         <a className="brand-lockup" href="#inicio" aria-label="Inicio Histeria">
           <BrandMark compact />
           <span className="header-brand-name">HISTERIA</span>
@@ -240,7 +240,7 @@ function PublicLanding() {
           <div className="hero-message">
             <p className="eyebrow">Pop • Rock • Cumbias • Reggae en vivo</p>
             <p className="hero-copy">
-              Una banda con energia, elegancia y repertorio versatil para eventos,
+              Una banda con energía, elegancia y repertorio versátil para eventos,
               bares, bodas, fiestas privadas y escenarios en vivo.
             </p>
             <div className="hero-actions">
@@ -257,11 +257,11 @@ function PublicLanding() {
         <div className="hero-metrics" aria-label="Resumen de la banda">
           <span>
             <strong>Pop</strong>
-            repertorio versatil
+            repertorio versátil
           </span>
           <span>
             <strong>Rock</strong>
-            energia de escenario
+            energía de escenario
           </span>
           <span>
             <strong>Cumbias</strong>
@@ -294,12 +294,12 @@ function PublicLanding() {
         </div>
         <div className="band-copy">
           <p className="section-kicker">La banda</p>
-          <h2>Musica en vivo con energia, estilo y sonido profesional.</h2>
+          <h2>Música en vivo con energía, estilo y sonido profesional.</h2>
           <p>
             Histeria combina pop, rock, cumbias y reggae con una puesta en escena moderna,
-            voces solidas y musicos con experiencia en eventos en vivo. Nuestro
-            repertorio esta pensado para conectar con el publico y mantener la
-            energia de principio a fin.
+            voces sólidas y músicos con experiencia en eventos en vivo. Nuestro
+            repertorio está pensado para conectar con el público y mantener la
+            energía de principio a fin.
           </p>
           <div className="event-type-list" aria-label="Tipos de evento">
             {eventTypes.map((type) => (
@@ -311,7 +311,7 @@ function PublicLanding() {
 
       <section className="content-section reveal" id="integrantes">
         <div className="section-heading">
-          <p className="section-kicker">Alineacion</p>
+          <p className="section-kicker">Alineación</p>
           <h2>Integrantes</h2>
         </div>
         <div className="member-grid">
@@ -332,11 +332,11 @@ function PublicLanding() {
 
       <section className="content-section repertoire-section reveal" id="repertorio">
         <div>
-          <p className="section-kicker">Generos y repertorio</p>
-          <h2>Un repertorio flexible para cada publico.</h2>
+          <p className="section-kicker">Géneros y repertorio</p>
+          <h2>Un repertorio flexible para cada público.</h2>
           <p>
-            Un repertorio versatil que mezcla clasicos, hits modernos y canciones
-            reconocidas para diferentes tipos de publico y evento.
+            Un repertorio versátil que mezcla clásicos, hits modernos y canciones
+            reconocidas para diferentes tipos de público y evento.
           </p>
         </div>
         <div className="tag-list">
@@ -359,7 +359,7 @@ function PublicLanding() {
             <IconPlay />
           </span>
           <div>
-            <h3>Proximamente</h3>
+            <h3>Próximamente</h3>
             <p>Nuevos videos oficiales en camino.</p>
           </div>
         </div>
@@ -367,7 +367,7 @@ function PublicLanding() {
 
       <section className="content-section upcoming-section reveal" id="fechas">
         <div className="section-heading">
-          <p className="section-kicker">Proximas fechas</p>
+          <p className="section-kicker">Próximas fechas</p>
           <h2>Presentaciones confirmadas.</h2>
         </div>
 
@@ -403,9 +403,9 @@ function PublicLanding() {
       <section className="content-section contact-section reveal" id="contrataciones">
         <div className="contact-copy">
           <p className="section-kicker">Contrataciones</p>
-          <h2>Lleva la energia de Histeria a tu evento.</h2>
+          <h2>Lleva la energía de Histeria a tu evento.</h2>
           <p>
-            Contanos la fecha, lugar, tipo de evento y duracion aproximada para
+            Contanos la fecha, lugar, tipo de evento y duración aproximada para
             preparar una propuesta.
           </p>
 
@@ -443,7 +443,7 @@ function PublicLanding() {
           </label>
 
           <label>
-            Telefono / WhatsApp
+            Teléfono / WhatsApp
             <input
               required
               value={form.telefono}
@@ -493,7 +493,7 @@ function PublicLanding() {
           </label>
 
           <label>
-            Duracion aproximada
+            Duración aproximada
             <input
               value={form.duracionEsperada}
               onChange={(event) => updateField("duracionEsperada", event.target.value)}
@@ -533,7 +533,7 @@ function PublicLanding() {
         </form>
       </section>
 
-      <footer className="site-footer reveal" aria-label="Pie de pagina">
+      <footer className="site-footer reveal" aria-label="Pie de página">
         <img
           src={BRAND_ASSETS.heart}
           alt=""
@@ -545,7 +545,7 @@ function PublicLanding() {
             <BrandMark variant="primary" />
             <p className="footer-genre-line">Pop • Rock • Cumbias • Reggae</p>
             <p>
-              Musica en vivo para eventos con energia, estilo y sonido profesional.
+              Música en vivo para eventos con energía, estilo y sonido profesional.
             </p>
           </div>
 
@@ -721,10 +721,10 @@ const members = [
     icon: IconMic,
   },
   {
-    name: "Wilmer Davila",
+    name: "Wilmer Dávila",
     role: "Bajista",
-    bio: "Base, groove y dinamica para sostener cada cancion.",
-    details: "Construye junto a la bateria una base solida que conecta cada seccion del repertorio y mantiene el pulso del show.",
+    bio: "Base, groove y dinámica para sostener cada canción.",
+    details: "Construye junto a la batería una base sólida que conecta cada sección del repertorio y mantiene el pulso del show.",
     photo: "/images/members/wilmer-davila.jpg",
     photoPosition: "34% 50%",
     icon: IconBass,
@@ -732,8 +732,8 @@ const members = [
   {
     name: "Cristian Aguilar",
     role: "Guitarrista",
-    bio: "Arreglos, riffs y texturas para dar caracter al sonido de Histeria.",
-    details: "Combina guitarras ritmicas, melodias y efectos para adaptar el sonido de la banda a cada genero y escenario.",
+    bio: "Arreglos, riffs y texturas para dar carácter al sonido de Histeria.",
+    details: "Combina guitarras rítmicas, melodías y efectos para adaptar el sonido de la banda a cada género y escenario.",
     photo: "/images/members/cristian-aguilar.jpg",
     photoPosition: "50% 42%",
     icon: IconGuitar,
@@ -741,8 +741,8 @@ const members = [
   {
     name: "Alejandro Navas",
     role: "Baterista",
-    bio: "Pulso, energia y dinamica para mantener el show en movimiento.",
-    details: "Marca las transiciones y eleva cada momento del repertorio con precision, fuerza y sensibilidad musical.",
+    bio: "Pulso, energía y dinámica para mantener el show en movimiento.",
+    details: "Marca las transiciones y eleva cada momento del repertorio con precisión, fuerza y sensibilidad musical.",
     photo: "/images/members/alejandro-navas.jpg",
     photoPosition: "50% 38%",
     icon: IconDrums,
@@ -756,8 +756,8 @@ const repertoire = [
   "Cumbias",
   "Reggae",
   "Baladas",
-  "Clasicos en ingles y espanol",
-  "Musica para eventos",
+  "Clásicos en inglés y español",
+  "Música para eventos",
 ];
 
 const eventTypes = [

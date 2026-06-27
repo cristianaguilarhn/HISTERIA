@@ -708,7 +708,7 @@ function MetricsModule({ metrics }: { metrics: AdminMetrics }) {
         <MetricCard label="Visitas totales" value={metrics.totalVisits} />
         <MetricCard label="Activos ahora" value={metrics.activeSessions} />
         <MetricCard label="Solicitudes" value={metrics.totalContactRequests} />
-        <MetricCard label="Conversion" value={`${metrics.conversionRate}%`} />
+        <MetricCard label="Conversión" value={`${metrics.conversionRate}%`} />
         <MetricCard label="Visitas registradas" value={metrics.trackedVisits} />
       </div>
 
@@ -795,7 +795,7 @@ function RequestsModule({
           <input
             value={query}
             onChange={(event) => onQueryChange(event.target.value)}
-            placeholder="Buscar por nombre, evento o telefono"
+            placeholder="Buscar por nombre, evento o teléfono"
           />
           <input
             type="date"
@@ -817,8 +817,8 @@ function RequestsModule({
               <th>Contacto</th>
               <th>Evento</th>
               <th>Fecha</th>
-              <th>Ubicacion</th>
-              <th>Accion</th>
+              <th>Ubicación</th>
+              <th>Acción</th>
             </tr>
           </thead>
           <tbody>
@@ -1223,7 +1223,7 @@ function BarChart({ points }: { points: Array<{ date: string; count: number }> }
   }
 
   return (
-    <div className="bar-chart" aria-label="Grafica de barras">
+    <div className="bar-chart" aria-label="Gráfica de barras">
       {visiblePoints.map((point) => (
         <div className="bar-item" key={point.date}>
           <span className="bar-value">{point.count}</span>
