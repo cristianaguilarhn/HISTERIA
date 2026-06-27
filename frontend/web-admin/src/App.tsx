@@ -21,7 +21,8 @@ type IconProps = SVGProps<SVGSVGElement>;
 type VisitCounterStatus = "loading" | "ready" | "error";
 type FormStatus = { tone: "success" | "error"; message: string } | null;
 
-const BAND_PHOTO_SRC = "/images/histeria-band-official.jpg";
+const HERO_PHOTO_SRC = "/images/histeria-band-official.jpg";
+const BAND_PHOTO_SRC = "/images/histeria-live-original.jpg";
 const VISITOR_SESSION_KEY = "histeria-visitor-session";
 
 const LOGO_ALT = "Histeria";
@@ -223,7 +224,7 @@ function PublicLanding() {
 
       <section className="hero-section reveal" id="inicio" aria-labelledby="hero-title">
         <img
-          src={BAND_PHOTO_SRC}
+          src={HERO_PHOTO_SRC}
           alt="Foto grupal oficial de Histeria"
           className="hero-photo band-photo"
         />
@@ -279,13 +280,13 @@ function PublicLanding() {
         <div className="band-image-frame">
           <img
             src={BAND_PHOTO_SRC}
-            alt="Integrantes de Histeria"
+            alt="Histeria tocando en vivo con el corazón de la banda reflejado en el escenario"
             className="band-photo"
           />
           <img
             src={BRAND_ASSETS.heart}
             alt=""
-            className="band-heart-mark"
+            className="floor-heart-reflection"
             aria-hidden="true"
           />
         </div>
@@ -312,9 +313,10 @@ function PublicLanding() {
           <h2>Integrantes</h2>
         </div>
         <div className="member-grid">
-          {members.map(({ bio, icon: Icon, name, photo, photoPosition, role }) => (
+          {members.map(({ bio, details, icon: Icon, name, photo, photoPosition, role }) => (
             <MemberCard
               bio={bio}
+              details={details}
               Icon={Icon}
               key={name}
               name={name}
@@ -710,6 +712,7 @@ const members = [
     name: "Valeria Solís",
     role: "Vocalista",
     bio: "Voz, presencia escenica y conexion directa con el publico.",
+    details: "Versatilidad vocal para recorrer baladas, pop, rock y ritmos bailables con una interpretacion cercana y potente.",
     photo: "/images/members/valeria-solis.jpg",
     photoPosition: "50% 40%",
     icon: IconMic,
@@ -718,6 +721,7 @@ const members = [
     name: "Wilmer Davila",
     role: "Bajista",
     bio: "Base, groove y dinamica para sostener cada cancion.",
+    details: "Construye junto a la bateria una base solida que conecta cada seccion del repertorio y mantiene el pulso del show.",
     photo: "/images/members/wilmer-davila.jpg",
     photoPosition: "34% 50%",
     icon: IconBass,
@@ -726,6 +730,7 @@ const members = [
     name: "Cristian Aguilar",
     role: "Guitarrista",
     bio: "Arreglos, riffs y texturas para dar caracter al sonido de Histeria.",
+    details: "Combina guitarras ritmicas, melodias y efectos para adaptar el sonido de la banda a cada genero y escenario.",
     photo: "/images/members/cristian-aguilar.jpg",
     photoPosition: "50% 42%",
     icon: IconGuitar,
@@ -734,6 +739,7 @@ const members = [
     name: "Alejandro Navas",
     role: "Baterista",
     bio: "Pulso, energia y dinamica para mantener el show en movimiento.",
+    details: "Marca las transiciones y eleva cada momento del repertorio con precision, fuerza y sensibilidad musical.",
     photo: "/images/members/alejandro-navas.jpg",
     photoPosition: "50% 38%",
     icon: IconDrums,

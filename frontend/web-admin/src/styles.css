@@ -71,10 +71,32 @@ svg {
   border: 1px solid rgba(255, 255, 255, 0.12);
   border-radius: 999px;
   padding: 10px 12px 10px 18px;
-  background: rgba(5, 7, 13, 0.78);
-  box-shadow: 0 22px 80px rgba(0, 0, 0, 0.36);
-  backdrop-filter: blur(18px);
+  overflow: hidden;
+  background:
+    linear-gradient(110deg, rgba(255, 255, 255, 0.09), transparent 30%),
+    linear-gradient(135deg, rgba(5, 7, 13, 0.52), rgba(11, 7, 20, 0.3));
+  box-shadow:
+    0 18px 60px rgba(0, 0, 0, 0.3),
+    inset 0 1px rgba(255, 255, 255, 0.13);
+  backdrop-filter: blur(24px) saturate(145%);
+  -webkit-backdrop-filter: blur(24px) saturate(145%);
   transform: translateX(-50%);
+}
+
+.site-header::before {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background:
+    radial-gradient(circle at 18% -60%, rgba(255, 43, 139, 0.24), transparent 42%),
+    radial-gradient(circle at 82% 160%, rgba(123, 53, 255, 0.18), transparent 38%);
+  content: "";
+  pointer-events: none;
+}
+
+.site-header > * {
+  position: relative;
+  z-index: 1;
 }
 
 .brand-lockup,
@@ -191,15 +213,18 @@ svg {
 
 .hero-photo {
   position: absolute;
-  inset: 0;
+  inset: 52px 0 0;
   z-index: -2;
   width: 100%;
-  height: 100%;
+  height: calc(100% - 52px);
+  opacity: 0.88;
+  filter: blur(0.55px) saturate(0.97);
+  transform: scale(1.002);
 }
 
 .band-photo {
   object-fit: cover;
-  object-position: center;
+  object-position: center top;
 }
 
 .hero-overlay {
@@ -213,31 +238,34 @@ svg {
 
 .hero-content {
   position: relative;
-  top: clamp(120px, 15vh, 150px);
+  top: clamp(190px, 22vh, 230px);
   display: grid;
-  grid-template-columns: minmax(300px, 400px) minmax(0, 650px);
+  grid-template-columns: minmax(240px, 320px) minmax(0, 650px);
   align-items: center;
-  gap: clamp(26px, 4vw, 54px);
-  width: min(1120px, 100%);
+  gap: clamp(22px, 3vw, 38px);
+  width: min(1040px, 100%);
   margin: 0 auto;
-  border: 1px solid rgba(255, 255, 255, 0.14);
-  border-radius: 8px;
-  padding: clamp(30px, 3vw, 38px);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 14px;
+  padding: clamp(16px, 1.7vw, 22px) clamp(20px, 2.2vw, 28px);
   background:
-    linear-gradient(105deg, rgba(255, 43, 139, 0.06), transparent 32%, rgba(123, 53, 255, 0.055)),
-    rgba(3, 6, 13, 0.48);
+    linear-gradient(105deg, rgba(255, 43, 139, 0.045), transparent 32%, rgba(123, 53, 255, 0.04)),
+    rgba(3, 6, 13, 0.1);
   box-shadow:
-    0 22px 64px rgba(0, 0, 0, 0.28),
-    inset 0 1px rgba(255, 255, 255, 0.06);
-  backdrop-filter: blur(17px) saturate(122%);
+    0 18px 52px rgba(0, 0, 0, 0.18),
+    inset 0 1px rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(5px) saturate(112%);
+  -webkit-backdrop-filter: blur(5px) saturate(112%);
 }
 
 .hero-brand {
-  transform: translateY(12px);
+  display: flex;
+  justify-content: center;
+  transform: translateY(6px);
 }
 
 .hero-brand .brand-mark-primary {
-  width: 100%;
+  width: min(100%, 290px);
   filter:
     drop-shadow(0 18px 28px rgba(0, 0, 0, 0.46))
     drop-shadow(0 0 18px rgba(255, 43, 139, 0.24))
@@ -308,6 +336,7 @@ h3 {
   max-width: 620px;
   margin-bottom: 0;
   color: rgba(255, 255, 255, 0.88);
+  line-height: 1.5;
 }
 
 .hero-actions,
@@ -319,7 +348,12 @@ h3 {
 }
 
 .hero-message .hero-actions {
-  margin-top: 22px;
+  margin-top: 14px;
+}
+
+.hero-content .button {
+  min-height: 44px;
+  padding-inline: 19px;
 }
 
 .button,
@@ -433,6 +467,36 @@ h3 {
   padding: clamp(68px, 10vw, 116px) 0;
 }
 
+#integrantes {
+  position: relative;
+  isolation: isolate;
+}
+
+#integrantes::before {
+  position: absolute;
+  top: 54%;
+  left: 50%;
+  z-index: 0;
+  width: min(820px, 82vw);
+  aspect-ratio: 1;
+  background: url("/brand/logo-histeria-heart.png") center / contain no-repeat;
+  content: "";
+  opacity: 0.13;
+  filter:
+    saturate(1.5)
+    blur(0.5px)
+    drop-shadow(0 0 48px rgba(255, 43, 139, 0.2));
+  mix-blend-mode: screen;
+  mask-image: radial-gradient(circle, #000 42%, rgba(0, 0, 0, 0.82) 60%, transparent 78%);
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+}
+
+#integrantes > * {
+  position: relative;
+  z-index: 1;
+}
+
 .band-section,
 .repertoire-section,
 .contact-section {
@@ -445,7 +509,7 @@ h3 {
 .band-image-frame {
   position: relative;
   min-height: 0;
-  aspect-ratio: 3 / 2;
+  aspect-ratio: 3 / 4;
   overflow: hidden;
   border: 1px solid rgba(255, 255, 255, 0.12);
   border-radius: 8px;
@@ -466,23 +530,26 @@ h3 {
   width: 100%;
   height: 100%;
   object-fit: cover;
+  object-position: center;
 }
 
-.band-heart-mark {
+.floor-heart-reflection {
   position: absolute;
-  top: 50%;
+  bottom: 4%;
   left: 50%;
   z-index: 2;
-  width: clamp(94px, 11vw, 132px);
-  aspect-ratio: 1;
-  border: 1px solid rgba(255, 255, 255, 0.16);
+  width: 46%;
   border-radius: 50%;
-  object-fit: cover;
-  opacity: 0.7;
+  opacity: 0.66;
+  mix-blend-mode: screen;
   filter:
-    drop-shadow(0 12px 24px rgba(0, 0, 0, 0.42))
-    drop-shadow(0 0 18px rgba(255, 43, 139, 0.2));
-  transform: translate(-50%, -50%);
+    saturate(1.65)
+    contrast(1.28)
+    blur(0.45px)
+    drop-shadow(0 0 16px rgba(255, 24, 140, 0.68));
+  mask-image: radial-gradient(ellipse at center, #000 42%, rgba(0, 0, 0, 0.8) 56%, transparent 76%);
+  transform: translateX(-50%) perspective(420px) rotateX(58deg) scaleY(1.4);
+  transform-origin: center bottom;
   pointer-events: none;
 }
 

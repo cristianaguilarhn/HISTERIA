@@ -7,6 +7,7 @@ type MemberCardProps = {
   name: string;
   role: string;
   bio: string;
+  details: string;
   photo: string;
   photoPosition?: string;
   Icon: ComponentType<IconProps>;
@@ -14,6 +15,7 @@ type MemberCardProps = {
 
 export function MemberCard({
   bio,
+  details,
   Icon,
   name,
   photo,
@@ -235,7 +237,7 @@ export function MemberCard({
 
       <div className="member-card-details-wrap" ref={detailsRef}>
         <div className="member-card-details">
-          <p ref={bioRef}>{bio}</p>
+          <p ref={bioRef}>{details}</p>
         </div>
       </div>
     </article>
