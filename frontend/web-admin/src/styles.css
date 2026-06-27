@@ -1044,16 +1044,56 @@ h3 {
   color: #f5c053;
 }
 
+.event-card-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: auto;
+  padding-top: 22px;
+}
+
+.event-calendar-button,
 .event-card-link {
   display: inline-flex;
   align-items: center;
-  align-self: flex-start;
   gap: 8px;
-  margin-top: auto;
-  padding-top: 22px;
-  color: #f7d792;
-  font-size: 0.84rem;
+  min-height: 38px;
+  font-size: 0.82rem;
   font-weight: 900;
+}
+
+.event-calendar-button {
+  border: 1px solid rgba(172, 117, 255, 0.34);
+  border-radius: 999px;
+  padding: 0 14px;
+  color: #fff;
+  background: linear-gradient(135deg, rgba(118, 55, 190, 0.34), rgba(255, 43, 139, 0.12));
+  font-family: inherit;
+  cursor: pointer;
+  transition:
+    border-color 220ms ease,
+    background 220ms ease,
+    box-shadow 220ms ease,
+    transform 220ms ease;
+}
+
+.event-calendar-button svg {
+  width: 15px;
+  height: 15px;
+  fill: currentColor;
+}
+
+.event-calendar-button:hover,
+.event-calendar-button:focus-visible {
+  border-color: rgba(245, 192, 83, 0.55);
+  background: linear-gradient(135deg, rgba(131, 65, 205, 0.5), rgba(255, 43, 139, 0.2));
+  box-shadow: 0 0 20px rgba(133, 73, 225, 0.14);
+  transform: translateY(-1px);
+}
+
+.event-card-link {
+  color: #f7d792;
 }
 
 .event-card-link span {
@@ -1616,6 +1656,16 @@ h3 {
   .event-confirmed {
     font-size: 0.62rem;
     letter-spacing: 0.08em;
+  }
+
+  .event-card-actions {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .event-calendar-button {
+    justify-content: center;
+    width: 100%;
   }
 
   .band-image-frame {

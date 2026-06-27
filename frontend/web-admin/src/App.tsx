@@ -471,16 +471,27 @@ function PublicLanding() {
                     </span>
                   </p>
                 </div>
-                {event.facebookUrl && (
-                  <a
-                    className="event-card-link"
-                    href={event.facebookUrl}
-                    target="_blank"
-                    rel="noreferrer"
+                <div className="event-card-actions">
+                  <button
+                    type="button"
+                    className="event-calendar-button"
+                    onClick={() => downloadCalendarEvent(event)}
+                    aria-label={`Agregar ${event.title} al calendario`}
                   >
-                    Ver evento <span aria-hidden="true">↗</span>
-                  </a>
-                )}
+                    <IconCalendar aria-hidden="true" />
+                    Agregar al calendario
+                  </button>
+                  {event.facebookUrl && (
+                    <a
+                      className="event-card-link"
+                      href={event.facebookUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                    >
+                      Ver evento <span aria-hidden="true">↗</span>
+                    </a>
+                  )}
+                </div>
               </article>
             ))}
           </div>
@@ -907,4 +918,78 @@ function formatEventTime(value: string) {
     hour: "numeric",
     minute: "2-digit",
   }).format(new Date(`1970-01-01T${value}`));
+}
+
+function downloadCalendarEvent(event: PresentationEvent) {
+  const start = toHondurasEventUtc(event.eventDate, event.eventTime);
+  const end = new Date(start.getTime() + 2 * 60 * 60 * 1000);
+  const details = [
+    event.description,
+    event.facebookUrl ? `Más información: ${event.facebookUrl}` : "",
+    "Evento de Histeria.",
+  ]
+    .filter(Boolean)
+    .join("\n\n");
+  const calendar = [
+    "BEGIN:VCALENDAR",
+    "VERSION:2.0",
+    "PRODID:-//Histeria//Eventos en vivo//ES",
+    "CALSCALE:GREGORIAN",
+    "METHOD:PUBLISH",
+    "BEGIN:VEVENT",
+    `UID:histeria-event-${event.id}@histeria.vercel.app`,
+    `DTSTAMP:${formatIcsDateTime(new Date())}`,
+    `DTSTART:${formatIcsDateTime(start)}`,
+    `DTEND:${formatIcsDateTime(end)}`,
+    `SUMMARY:${escapeIcsText(`Histeria — ${event.title}`)}`,
+    `LOCATION:${escapeIcsText(`${event.venue}, ${event.city}`)}`,
+    `DESCRIPTION:${escapeIcsText(details)}`,
+    "END:VEVENT",
+    "END:VCALENDAR",
+  ]
+    .map(foldIcsLine)
+    .join("\r\n");
+
+  const blob = new Blob([calendar], { type: "text/calendar;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = `histeria-${slugify(event.title)}-${event.eventDate}.ics`;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+function toHondurasEventUtc(date: string, time: string) {
+  const [year, month, day] = date.split("-").map(Number);
+  const [hours, minutes] = time.split(":").map(Number);
+
+  // Honduras usa UTC-6 todo el año; se convierte a UTC para máxima compatibilidad.
+  return new Date(Date.UTC(year, month - 1, day, hours + 6, minutes));
+}
+
+function formatIcsDateTime(value: Date) {
+  return value.toISOString().replace(/[-:]/g, "").replace(/\.\d{3}/, "");
+}
+
+function escapeIcsText(value: string) {
+  return value
+    .replace(/\\/g, "\\\\")
+    .replace(/\r?\n/g, "\\n")
+    .replace(/,/g, "\\,")
+    .replace(/;/g, "\\;");
+}
+
+function foldIcsLine(value: string) {
+  return value.match(/.{1,70}/g)?.join("\r\n ") ?? value;
+}
+
+function slugify(value: string) {
+  return value
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-|-$/g, "");
 }
