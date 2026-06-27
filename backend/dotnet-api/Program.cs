@@ -141,22 +141,26 @@ app.MapPost("/auth/login", async (ContactDbContext db, AdminLoginRequest request
     var username = string.IsNullOrWhiteSpace(request.MemberName)
         ? defaultAdminUser
         : request.MemberName.Trim();
+    var normalizedUsername = username.ToLowerInvariant();
     var adminUser = await db.AdminUsers
         .AsNoTracking()
-        .FirstOrDefaultAsync(user => user.Username == username);
+        .FirstOrDefaultAsync(user => user.Username.ToLower() == normalizedUsername);
 
     if (adminUser == null ||
         string.IsNullOrWhiteSpace(request.Password) ||
         !AdminHelpers.VerifyPassword(request.Password, adminUser.PasswordHash))
     {
-        return Results.Unauthorized();
+        return Results.Json(
+            new { message = "Usuario o contraseña incorrectos." },
+            statusCode: StatusCodes.Status401Unauthorized
+        );
     }
 
     var displayName = adminUser.DisplayName;
     var expiresAt = DateTimeOffset.UtcNow.AddHours(8);
     var token = AdminHelpers.CreateAdminToken(displayName, expiresAt, adminTokenSecret);
 
-    return Results.Ok(new AdminLoginResponse(token, username, displayName, expiresAt));
+    return Results.Ok(new AdminLoginResponse(token, adminUser.Username, displayName, expiresAt));
 })
 .WithName("AdminLogin");
 
@@ -377,7 +381,10 @@ app.MapPost("/admin/users", async (HttpContext context, ContactDbContext db, Adm
     }
 
     var username = request.Username.Trim();
-    var exists = await db.AdminUsers.AnyAsync(user => user.Username == username);
+    var normalizedUsername = username.ToLowerInvariant();
+    var exists = await db.AdminUsers.AnyAsync(
+        user => user.Username.ToLower() == normalizedUsername
+    );
     if (exists)
     {
         return Results.Conflict(new { message = "Ya existe una cuenta con ese usuario." });
@@ -412,7 +419,10 @@ app.MapPost("/admin/users/change-password", async (HttpContext context, ContactD
         return Results.BadRequest(new { message = "Completa la contraseña actual y una nueva contraseña de al menos 10 caracteres." });
     }
 
-    var user = await db.AdminUsers.FirstOrDefaultAsync(item => item.Username == request.Username.Trim());
+    var normalizedUsername = request.Username.Trim().ToLowerInvariant();
+    var user = await db.AdminUsers.FirstOrDefaultAsync(
+        item => item.Username.ToLower() == normalizedUsername
+    );
     if (user == null || !AdminHelpers.VerifyPassword(request.CurrentPassword, user.PasswordHash))
     {
         return Results.BadRequest(new { message = "La contraseña actual no es correcta." });
@@ -813,7 +823,10 @@ public static class DatabaseBootstrapper
         }
 
         var defaultUsername = defaultAdminUser.Trim();
-        var defaultUser = await db.AdminUsers.FirstOrDefaultAsync(user => user.Username == defaultUsername);
+        var normalizedUsername = defaultUsername.ToLowerInvariant();
+        var defaultUser = await db.AdminUsers.FirstOrDefaultAsync(
+            user => user.Username.ToLower() == normalizedUsername
+        );
 
         if (defaultUser == null)
         {
