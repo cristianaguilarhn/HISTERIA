@@ -82,6 +82,7 @@ function PublicLanding() {
   const [form, setForm] = useState<ContactFormPayload>(initialForm);
   const [isSending, setIsSending] = useState(false);
   const [formStatus, setFormStatus] = useState<FormStatus>(null);
+  const [activeVideoIndex, setActiveVideoIndex] = useState(0);
 
   useEffect(() => {
     document.title = "Histeria | Pop • Rock • Cumbias • Reggae en vivo";
@@ -205,6 +206,13 @@ function PublicLanding() {
       : visitStatus === "loading"
         ? "..."
         : "+0";
+  const activeVideo = videos[activeVideoIndex];
+  const showPreviousVideo = () => {
+    setActiveVideoIndex((current) => (current - 1 + videos.length) % videos.length);
+  };
+  const showNextVideo = () => {
+    setActiveVideoIndex((current) => (current + 1) % videos.length);
+  };
 
   return (
     <main className="site-shell">
@@ -352,15 +360,68 @@ function PublicLanding() {
       <section className="content-section live-section reveal" id="videos">
         <div className="section-heading">
           <p className="section-kicker">Videos en vivo</p>
-          <h2>Muy pronto, Histeria en escenario.</h2>
+          <h2>Histeria en escenario.</h2>
         </div>
-        <div className="video-placeholder">
-          <span className="video-placeholder-icon" aria-hidden="true">
-            <IconPlay />
-          </span>
-          <div>
-            <h3>Próximamente</h3>
-            <p>Nuevos videos oficiales en camino.</p>
+
+        <div className={`video-carousel${activeVideo.isShort ? " is-short" : ""}`}>
+          <div className="video-carousel-stage">
+            <iframe
+              key={activeVideo.id}
+              src={`https://www.youtube-nocookie.com/embed/${activeVideo.id}?rel=0`}
+              title={`${activeVideo.title} — Histeria en vivo`}
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+              allowFullScreen
+              loading="lazy"
+              referrerPolicy="strict-origin-when-cross-origin"
+            />
+          </div>
+
+          <div className="video-carousel-controls">
+            <button
+              type="button"
+              className="video-carousel-arrow"
+              onClick={showPreviousVideo}
+              aria-label="Ver video anterior"
+            >
+              ←
+            </button>
+            <div className="video-carousel-caption" aria-live="polite">
+              <span>{String(activeVideoIndex + 1).padStart(2, "0")} / {String(videos.length).padStart(2, "0")}</span>
+              <h3>{activeVideo.title}</h3>
+              <p>Histeria en vivo</p>
+            </div>
+            <button
+              type="button"
+              className="video-carousel-arrow"
+              onClick={showNextVideo}
+              aria-label="Ver siguiente video"
+            >
+              →
+            </button>
+          </div>
+
+          <div className="video-carousel-thumbnails" aria-label="Seleccionar video">
+            {videos.map((video, index) => (
+              <button
+                type="button"
+                key={video.id}
+                className={index === activeVideoIndex ? "is-active" : ""}
+                onClick={() => setActiveVideoIndex(index)}
+                aria-label={`Ver ${video.title}`}
+                aria-current={index === activeVideoIndex ? "true" : undefined}
+              >
+                <span className="video-thumbnail">
+                  <img
+                    src={`https://i.ytimg.com/vi/${video.id}/hqdefault.jpg`}
+                    alt=""
+                    loading="lazy"
+                    decoding="async"
+                  />
+                  <IconPlay aria-hidden="true" />
+                </span>
+                <span>{video.title}</span>
+              </button>
+            ))}
           </div>
         </div>
       </section>
@@ -767,6 +828,24 @@ const eventTypes = [
   "Eventos corporativos",
   "Escenarios en vivo",
 ];
+
+const videos = [
+  {
+    id: "MgHcEnMwFwk",
+    title: "Nunca es suficiente",
+    isShort: false,
+  },
+  {
+    id: "idiygpVcP9E",
+    title: "Si una vez",
+    isShort: true,
+  },
+  {
+    id: "47zQADqJ0zg",
+    title: "Down Under",
+    isShort: true,
+  },
+] as const;
 
 export default App;
 

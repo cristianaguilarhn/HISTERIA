@@ -709,41 +709,156 @@ h3 {
   padding: 18px;
 }
 
-.video-placeholder {
-  display: flex;
-  align-items: center;
+.video-carousel {
+  display: grid;
+  justify-items: center;
   gap: 20px;
-  min-height: 190px;
   margin-top: 28px;
-  border: 1px dashed rgba(255, 255, 255, 0.2);
-  border-radius: 8px;
-  padding: clamp(24px, 5vw, 46px);
-  background: rgba(255, 255, 255, 0.035);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 18px;
+  padding: clamp(14px, 2.8vw, 28px);
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 16% 0%, rgba(255, 43, 139, 0.16), transparent 34%),
+    radial-gradient(circle at 88% 20%, rgba(123, 53, 255, 0.16), transparent 30%),
+    rgba(5, 7, 13, 0.82);
+  box-shadow: 0 28px 80px rgba(0, 0, 0, 0.34);
 }
 
-.video-placeholder-icon {
+.video-carousel-stage {
+  width: min(100%, 960px);
+  aspect-ratio: 16 / 9;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 14px;
+  overflow: hidden;
+  background: #000;
+  box-shadow: 0 18px 54px rgba(0, 0, 0, 0.36);
+  transition: width 220ms ease, aspect-ratio 220ms ease;
+}
+
+.video-carousel.is-short .video-carousel-stage {
+  width: min(100%, 420px);
+  aspect-ratio: 9 / 16;
+}
+
+.video-carousel-stage iframe {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border: 0;
+}
+
+.video-carousel-controls {
+  display: grid;
+  grid-template-columns: 48px minmax(0, 1fr) 48px;
+  align-items: center;
+  gap: 16px;
+  width: min(100%, 960px);
+}
+
+.video-carousel-arrow {
   display: grid;
   place-items: center;
-  flex: 0 0 58px;
-  width: 58px;
-  height: 58px;
+  width: 48px;
+  height: 48px;
+  border: 1px solid rgba(255, 255, 255, 0.16);
   border-radius: 50%;
-  color: #ffffff;
-  background: linear-gradient(135deg, #ff2b8b, #7b35ff);
+  color: #fff;
+  background: rgba(255, 255, 255, 0.07);
+  font: inherit;
+  font-size: 1.3rem;
+  cursor: pointer;
+  transition: border-color 180ms ease, background 180ms ease, transform 180ms ease;
 }
 
-.video-placeholder-icon svg {
-  width: 24px;
-  height: 24px;
+.video-carousel-arrow:hover,
+.video-carousel-arrow:focus-visible {
+  border-color: rgba(255, 121, 185, 0.72);
+  background: rgba(255, 43, 139, 0.18);
+  transform: translateY(-2px);
 }
 
-.video-placeholder h3 {
-  margin-bottom: 8px;
+.video-carousel-caption {
+  min-width: 0;
+  text-align: center;
 }
 
-.video-placeholder p {
+.video-carousel-caption span {
+  color: #ff79b9;
+  font-size: 0.72rem;
+  font-weight: 900;
+  letter-spacing: 0.14em;
+}
+
+.video-carousel-caption h3 {
+  margin: 4px 0;
+  font-size: clamp(1.15rem, 2vw, 1.55rem);
+}
+
+.video-carousel-caption p {
   margin: 0;
   color: rgba(246, 243, 247, 0.7);
+}
+
+.video-carousel-thumbnails {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  width: min(100%, 960px);
+}
+
+.video-carousel-thumbnails button {
+  display: grid;
+  grid-template-columns: 92px minmax(0, 1fr);
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  padding: 8px;
+  color: rgba(246, 243, 247, 0.76);
+  background: rgba(255, 255, 255, 0.045);
+  font: inherit;
+  font-weight: 800;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 180ms ease, background 180ms ease, color 180ms ease;
+}
+
+.video-carousel-thumbnails button:hover,
+.video-carousel-thumbnails button:focus-visible,
+.video-carousel-thumbnails button.is-active {
+  border-color: rgba(255, 121, 185, 0.58);
+  color: #fff;
+  background: rgba(255, 43, 139, 0.12);
+}
+
+.video-thumbnail {
+  position: relative;
+  display: block;
+  aspect-ratio: 16 / 9;
+  border-radius: 8px;
+  overflow: hidden;
+  background: #000;
+}
+
+.video-thumbnail img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.video-thumbnail svg {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 24px;
+  height: 24px;
+  padding: 6px;
+  border-radius: 50%;
+  color: #fff;
+  background: rgba(5, 7, 13, 0.78);
+  transform: translate(-50%, -50%);
 }
 
 .upcoming-card,
@@ -1247,6 +1362,37 @@ h3 {
   .upcoming-grid,
   .contact-form {
     grid-template-columns: 1fr;
+  }
+
+  .video-carousel {
+    gap: 16px;
+    border-radius: 14px;
+    padding: 10px;
+  }
+
+  .video-carousel-controls {
+    grid-template-columns: 42px minmax(0, 1fr) 42px;
+    gap: 8px;
+  }
+
+  .video-carousel-arrow {
+    width: 42px;
+    height: 42px;
+  }
+
+  .video-carousel-thumbnails {
+    display: flex;
+    width: 100%;
+    padding-bottom: 4px;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    scrollbar-width: thin;
+  }
+
+  .video-carousel-thumbnails button {
+    grid-template-columns: 78px minmax(0, 1fr);
+    flex: 0 0 82%;
+    scroll-snap-align: center;
   }
 
   .band-image-frame {
