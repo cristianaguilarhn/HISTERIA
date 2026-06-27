@@ -579,7 +579,8 @@ function PublicLanding() {
         rel="noreferrer"
         aria-label="Contactar por WhatsApp"
       >
-        <IconPhone className="button-icon" /> WhatsApp
+        <IconPhone className="button-icon" />
+        <span className="whatsapp-label">WhatsApp</span>
       </a>
     </main>
   );
