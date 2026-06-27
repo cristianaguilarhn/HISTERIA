@@ -5,6 +5,7 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.EntityFrameworkCore;
+using Npgsql;
 
 var builder = WebApplication.CreateBuilder(args);
 builder.Configuration.AddEnvironmentVariables();
@@ -16,7 +17,9 @@ builder.Services.Configure<EmailOptions>(builder.Configuration.GetSection("Email
 builder.Services.AddSingleton<IEmailSender, SmtpEmailSender>();
 builder.Services.AddHttpClient();
 
-var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+var connectionString = NormalizeDatabaseConnectionString(
+    builder.Configuration.GetConnectionString("DefaultConnection")
+);
 var isPostgreSqlConnection = !string.IsNullOrWhiteSpace(connectionString) &&
     connectionString.Contains("Host=", StringComparison.OrdinalIgnoreCase);
 
@@ -638,6 +641,31 @@ app.MapGet("/weatherforecast", () =>
 .WithName("GetWeatherForecast");
 
 app.Run();
+
+static string? NormalizeDatabaseConnectionString(string? connectionString)
+{
+    if (string.IsNullOrWhiteSpace(connectionString) ||
+        !Uri.TryCreate(connectionString, UriKind.Absolute, out var uri) ||
+        (uri.Scheme != "postgres" && uri.Scheme != "postgresql"))
+    {
+        return connectionString;
+    }
+
+    var credentials = uri.UserInfo.Split(':', 2);
+    var builder = new NpgsqlConnectionStringBuilder
+    {
+        Host = uri.Host,
+        Port = uri.IsDefaultPort ? 5432 : uri.Port,
+        Username = Uri.UnescapeDataString(credentials[0]),
+        Password = credentials.Length > 1
+            ? Uri.UnescapeDataString(credentials[1])
+            : "",
+        Database = Uri.UnescapeDataString(uri.AbsolutePath.TrimStart('/')),
+        Pooling = true
+    };
+
+    return builder.ConnectionString;
+}
 
 // Database Context
 public class ContactDbContext : DbContext

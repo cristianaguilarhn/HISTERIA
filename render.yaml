@@ -1,0 +1,39 @@
+services:
+  - type: web
+    runtime: docker
+    name: histeria-api
+    plan: free
+    region: virginia
+    dockerContext: ./backend/dotnet-api
+    dockerfilePath: ./backend/dotnet-api/Dockerfile
+    healthCheckPath: /health
+    envVars:
+      - key: ASPNETCORE_ENVIRONMENT
+        value: Production
+      - key: ASPNETCORE_URLS
+        value: http://0.0.0.0:10000
+      - key: PORT
+        value: "10000"
+      - key: ConnectionStrings__DefaultConnection
+        fromDatabase:
+          name: histeria-db
+          property: connectionString
+      - key: AllowedOrigins
+        value: https://histeria.vercel.app
+      - key: ADMIN_DEFAULT_USER
+        value: Cristian
+      - key: ADMIN_PASSWORD
+        sync: false
+      - key: ADMIN_TOKEN_SECRET
+        generateValue: true
+      - key: ADMIN_API_KEY
+        generateValue: true
+
+databases:
+  - name: histeria-db
+    plan: free
+    region: virginia
+    postgresMajorVersion: "17"
+    databaseName: histeria
+    user: histeria_app
+    ipAllowList: []

@@ -18,7 +18,7 @@ RUN apt-get update \
 COPY --from=build /app/publish .
 
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
-  CMD curl --fail --silent http://localhost/live || exit 1
+  CMD curl --fail --silent "http://localhost:${PORT:-80}/live" || exit 1
 
 EXPOSE 80
 
